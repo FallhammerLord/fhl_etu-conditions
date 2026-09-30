@@ -84,7 +84,7 @@ check(await page.evaluate(() => !window.radialMenu.isOpen && !document.querySele
 // A right-click opens on release, not on press; a release after dragging (a pan) opens nothing.
 const rightClick = (dx) => page.evaluate(async (dx) =>
 {
-   window.radialMenu.open(window.token, { clientX: 420, clientY: 330 });
+   window.radialMenu.open(window.token, { clientX: 420, clientY: 330, buttons: 2 });
    const openBeforeRelease = window.radialMenu.isOpen;
    window.dispatchEvent(new PointerEvent('pointerup', { button: 2, clientX: 420 + dx, clientY: 330 }));
    await new Promise((r) => setTimeout(r, 150));
@@ -97,6 +97,17 @@ check(!click.openBeforeRelease, 'ring waits for the right-button release');
 check(click.openAfter, 'ring opens after the release');
 const pan = await rightClick(40);
 check(!pan.openAfter, 'a right-drag (pan) does not open the ring');
+
+// Foundry may report the click after the release (button already up): the ring opens on its own.
+const released = await page.evaluate(async () =>
+{
+   window.radialMenu.open(window.token, { clientX: 420, clientY: 330, buttons: 0 });
+   await new Promise((r) => setTimeout(r, 150));
+   const open = window.radialMenu.isOpen;
+   window.radialMenu.close();
+   return open;
+});
+check(released, 'a click reported on release opens the ring');
 
 check(errors.length === 0, `no page errors (${errors.join(' | ')})`);
 await browser.close();

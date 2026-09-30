@@ -31,6 +31,12 @@ const OPEN_DELAY = 60;
 /** Item types offered under Hacked (weapons, gear, and anything already hacked). */
 const HACKABLE_TYPES = new Set(['attack', 'equipment', 'armor', 'artifact']);
 
+/** Console trace, on when `CONFIG.debug.etuConditions = true`. */
+function debug(...args)
+{
+   if (globalThis.CONFIG?.debug?.etuConditions) { console.log('ETU Conditions |', ...args); }
+}
+
 const t = (key) => game.i18n.localize(`${MODULE_ID}.${key}`);
 const tf = (key, data) => game.i18n.format(`${MODULE_ID}.${key}`, data);
 
@@ -152,10 +158,10 @@ class RadialMenu
    get isOpen() { return !!this.token; }
 
    /**
-    * Handles a right-click on a token. Foundry reports the click when the button goes down, so the ring
-    * waits for the release: opening under a held button would take the release away from the canvas and
-    * leave Foundry stuck mid right-drag (panning). A release after the pointer moved was a pan, so the
-    * ring stays closed.
+    * Handles a right-click on a token. If the button is still held, the ring waits for the release:
+    * opening under a held button would take the release away from the canvas. A release after the
+    * pointer moved was a pan, so the ring stays closed. If the button is already up, it opens after a
+    * short delay that lets the trailing context-menu event pass.
     *
     * @param {Token} token - The token right-clicked.
     * @param {object} [event] - The pointer-down event. Omit to open at once (macros, tests).
@@ -163,6 +169,7 @@ class RadialMenu
     */
    open(token, event)
    {
+      debug('open requested', { token: token?.name, actor: !!token?.actor, owner: token?.document?.isOwner });
       if (!token?.actor || !token.document?.isOwner) { return false; }
       // A second right-click on the same token closes the menu (the pointerdown already did) and stays closed.
       if (this.lastClosed?.token === token && performance.now() - this.lastClosed.at < 400) { return true; }
@@ -171,12 +178,23 @@ class RadialMenu
       this.close();
       if (!event) { this.show(token); return true; }
 
+      // Foundry may report the right-click on release instead of press. If the button is already up,
+      // only the trailing context-menu event is left to pass.
+      const held = ((event.buttons ?? 0) & 2) === 2;
+      debug('right-click', { token: token.name, type: event.type, button: event.button, buttons: event.buttons, held });
+      if (!held)
+      {
+         this.pending = { timer: setTimeout(() => { this.pending = null; this.show(token); }, OPEN_DELAY) };
+         return true;
+      }
+
       const start = { x: event.clientX ?? event.client?.x, y: event.clientY ?? event.client?.y };
       const onUp = (up) =>
       {
          if (up.button !== 2) { return; }
          this.cancelPending();
          const moved = Number.isFinite(start.x) && Math.hypot(up.clientX - start.x, up.clientY - start.y) > PAN_THRESHOLD;
+         debug('right-button released', { moved });
          if (moved) { return; }
          // Let the context-menu event that follows the release (on Windows) pass before the ring covers the cursor.
          this.pending = { timer: setTimeout(() => { this.pending = null; this.show(token); }, OPEN_DELAY) };
@@ -198,6 +216,7 @@ class RadialMenu
    {
       if (!token?.actor || token.destroyed) { return; }
       this.close();
+      debug('show ring', { token: token.name });
       this.shownAt = performance.now();
       this.token = token;
       this.path = [];
