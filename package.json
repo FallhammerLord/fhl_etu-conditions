@@ -7,8 +7,9 @@
     "lint": "eslint scripts tools",
     "load": "node tools/load-check.mjs",
     "rules": "node tools/rules-check.mjs",
-    "check": "npm run lint && npm run load && npm run rules",
-    "preview": "node tools/radial-preview.mjs"
+    "check": "npm run lint && npm run load && npm run rules && npm run contrast",
+    "preview": "node tools/radial-preview.mjs",
+    "contrast": "node tools/check-contrast.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

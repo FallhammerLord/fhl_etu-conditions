@@ -62,9 +62,11 @@ function colorNumber(hex)
  * @param {string} label - Pip text, e.g. "L4".
  * @param {string} color - `#rrggbb` border and text color.
  * @param {number} height - Pip height in canvas pixels.
+ * @param {object} [options]
+ * @param {boolean} [options.solid=false] - High contrast: filled with the color, dark text.
  * @returns {PIXI.Container} The pip, origin at its top-left corner.
  */
-export function makePip(label, color, height)
+export function makePip(label, color, height, { solid = false } = {})
 {
    const pip = new PIXI.Container();
    const Text = textClass();
@@ -72,13 +74,13 @@ export function makePip(label, color, height)
       fontFamily: 'monospace',
       fontSize: Math.round(height * 0.66),
       fontWeight: '700',
-      fill: colorNumber(color)
+      fill: solid ? 0x0b0e12 : colorNumber(color)
    });
    const padX = height * 0.35;
    const width = Math.max(height * 1.6, text.width + padX * 2);
    const bg = new PIXI.Graphics();
-   bg.lineStyle(Math.max(1.5, height * 0.1), colorNumber(color), 1);
-   bg.beginFill(0x0e1318, 0.92);
+   bg.lineStyle(Math.max(1.5, height * (solid ? 0.12 : 0.1)), solid ? 0x0b0e12 : colorNumber(color), 1);
+   bg.beginFill(solid ? colorNumber(color) : 0x0e1318, solid ? 1 : 0.92);
    bg.drawRoundedRect(0, 0, width, height, height * 0.25);
    bg.endFill();
    text.anchor?.set?.(0.5, 0.5);

@@ -32,6 +32,20 @@ export function registerSettings({ onPipsChange })
       });
    }
 
+   game.settings.register(MODULE_ID, 'contrast', {
+      name: `${MODULE_ID}.settings.contrast.name`,
+      hint: `${MODULE_ID}.settings.contrast.hint`,
+      scope: 'client',
+      config: true,
+      type: String,
+      choices: {
+         standard: `${MODULE_ID}.settings.contrast.standard`,
+         high: `${MODULE_ID}.settings.contrast.high`
+      },
+      default: 'standard',
+      onChange: () => onPipsChange()
+   });
+
    game.settings.register(MODULE_ID, 'showPips', {
       name: `${MODULE_ID}.settings.showPips.name`,
       hint: `${MODULE_ID}.settings.showPips.hint`,
@@ -51,6 +65,13 @@ export function canEdit(key)
 {
    if (game.user.isGM) { return true; }
    return game.settings.get(MODULE_ID, `playerEdit.${key}`) === true;
+}
+
+/** @returns {boolean} Whether this player chose the high-contrast (colour-blind friendly) look. */
+export function highContrast()
+{
+   try { return game.settings.get(MODULE_ID, 'contrast') === 'high'; }
+   catch { return false; }
 }
 
 /** @returns {boolean} Whether this client draws condition pips on tokens. */

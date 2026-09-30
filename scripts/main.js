@@ -15,7 +15,7 @@ import { onRenderItemSheet } from './item-sheet.js';
 
 Hooks.once('init', () =>
 {
-   registerSettings({ onPipsChange: redrawAllPips });
+   registerSettings({ onPipsChange: () => { redrawAllPips(); radialMenu.refresh(); } });
    registerStatusEffects();
    installTokenRightClick((token, event) => radialMenu.open(token, event));
    game.modules.get(MODULE_ID).api = api;

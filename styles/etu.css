@@ -1,14 +1,29 @@
 /* ETU Conditions. Colors only through --etu-* tokens; condition colors come from the registry. */
 :root {
-  --etu-bg: #0e1318;
-  --etu-slice: #1c2530;
-  --etu-slice-hot: #2b3a4a;
-  --etu-line: #3a4858;
-  --etu-fg: #dde5ee;
-  --etu-muted: #8d9aa9;
-  --etu-accent: #d8b25a;
+  /* Shared with the Cypher Card Sheet's dark theme, so the two read as one family. */
+  --etu-bg: #0f131a;
+  --etu-slice: #1c2430;
+  --etu-slice-hot: #273244;
+  --etu-line: #2d3a4c;
+  --etu-line-strong: #41536b;
+  --etu-edge: #eef3f8;
+  --etu-fg: #e7edf4;
+  --etu-muted: #a3b0bf;
+  --etu-accent: #dcb65e;
   --etu-font-label: "Signika", "Segoe UI", system-ui, sans-serif;
   --etu-font-data: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+/* High contrast (per player): brighter lines and labels, stronger fills, no textures. */
+.etu-radial.etu-hc {
+  --etu-bg: #05070a;
+  --etu-slice: #141a23;
+  --etu-slice-hot: #2a3a52;
+  --etu-line: #9aa8b8;
+  --etu-line-strong: #c9d3de;
+  --etu-fg: #ffffff;
+  --etu-muted: #dde4ec;
+  --etu-accent: #f0c24a;
 }
 
 .etu-radial {
@@ -26,12 +41,29 @@
 }
 .etu-radial-svg [data-act] { pointer-events: all; cursor: pointer; }
 
-.etu-ring-backdrop { fill: var(--etu-bg); opacity: 0.55; }
+.etu-ring-backdrop { fill: var(--etu-bg); opacity: 0.6; }
+.etu-ring-backdrop { transform-box: view-box; }
+
+/* The frame, after Warframe's mod borders: one plate rim for the whole wheel, not a border per wedge. */
+.etu-frame-group, .etu-dividers { pointer-events: none; }
+.etu-frame { fill: none; stroke: url(#etu-plate); stroke-width: 7; opacity: 0.92; }
+.etu-frame-edge { fill: none; stroke: var(--etu-edge); stroke-width: 1; opacity: 0.6; }
+.etu-frame-inner { fill: none; stroke: #0b0e12; stroke-width: 1.2; opacity: 0.8; }
+.etu-frame-rim { fill: none; stroke: url(#etu-plate); stroke-width: 2.5; opacity: 0.85; }
+.etu-chevron { fill: none; stroke: var(--etu-edge); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+/* "Opens another ring": an outward double chevron on the frame, in the frame's own colour (not gold,
+   which reads as importance). */
+.etu-deeper { fill: none; stroke: #0b0e12; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+
+/* Dividers between wedges: one gradient line each (stroke set per divider), dim gold with a bright point. */
+.etu-divider { stroke-width: 1.8; stroke-linecap: round; filter: drop-shadow(0 0 2px var(--etu-accent)); }
+.etu-div-dim { stop-color: var(--etu-accent); stop-opacity: 0.32; }
+.etu-div-bright { stop-color: #fff3c4; stop-opacity: 1; }
+.etu-greeble { fill: url(#etu-plate); stroke: var(--etu-edge); stroke-width: 0.8; stroke-opacity: 0.55; stroke-linejoin: round; }
 .etu-center { fill: transparent; stroke: var(--etu-accent); stroke-opacity: 0.35; }
 .etu-center:hover { stroke-opacity: 0.8; }
 
-.etu-slice { fill: var(--etu-slice); stroke: var(--etu-line); stroke-width: 1; }
-.etu-slice-group, .etu-slice-more { stroke: var(--etu-accent); stroke-width: 1.5; }
+.etu-slice { fill: var(--etu-slice); stroke: none; }
 .etu-slice.is-hot { fill: var(--etu-slice-hot); }
 .etu-slice.is-locked, .etu-cell.is-locked { opacity: 0.5; cursor: not-allowed; }
 .etu-empty-ring { fill: none; stroke: var(--etu-line); stroke-width: 84; opacity: 0.6; }
@@ -51,14 +83,11 @@
 }
 .etu-slice-value { font-size: 11px; }
 .etu-slice-key { fill: var(--etu-muted); font-size: 10px; }
-.etu-drill-dot { fill: var(--etu-accent); pointer-events: none; }
 
-.etu-cell { fill: var(--etu-slice); stroke: var(--etu-line); stroke-width: 1; }
-.etu-cell.is-within { fill-opacity: 0.45; }
+.etu-cell { fill: var(--etu-slice); stroke: none; }
 .etu-cell.is-active { stroke: var(--etu-fg); stroke-width: 1.5; }
 .etu-cell.is-hot:not(.is-active):not(.is-within) { fill: var(--etu-slice-hot); }
 .etu-cell-label { fill: var(--etu-fg); font-size: 11px; font-weight: 600; }
-.etu-cell-label.is-active { fill: var(--etu-bg); }
 
 .etu-radial-crumb, .etu-radial-readout {
   position: absolute;
@@ -101,8 +130,25 @@
 .etu-cell-icon { color: var(--etu-fg); opacity: 0.16; pointer-events: none; }
 .etu-cell-icon.is-active { color: var(--etu-bg); opacity: 0.3; }
 
+/* High contrast: thicker lines, opaque backdrop, full-strength fills, textures off. */
+.etu-hc .etu-ring-backdrop { opacity: 0.88; }
+/* High-contrast frame: the Cypher Card Sheet's green plate with mint edges. */
+.etu-hc .etu-frame, .etu-hc .etu-frame-rim { stroke: url(#etu-plate-hc); opacity: 1; }
+.etu-hc .etu-frame-edge, .etu-hc .etu-chevron { stroke: #d4fff0; opacity: 1; }
+.etu-hc .etu-divider { stroke-width: 2.2; filter: drop-shadow(0 0 2px #10a877); }
+.etu-hc .etu-div-dim { stop-color: #7fe6c2; stop-opacity: 0.8; }
+.etu-hc .etu-div-bright { stop-color: #ffffff; stop-opacity: 1; }
+.etu-hc .etu-greeble { fill: url(#etu-plate-hc); stroke: #d4fff0; stroke-opacity: 1; }
+
+.etu-hc .etu-slice-icon { opacity: 0.2; }
+.etu-hc .etu-slice-art { opacity: 0.35; }
+.etu-hc .etu-cell-icon { opacity: 0.24; }
+.etu-hc .etu-slice.is-locked, .etu-hc .etu-cell.is-locked { opacity: 0.7; }
+.etu-hc .etu-slice-label, .etu-hc .etu-cell-label { font-size: 12px; }
+.etu-hc .etu-radial-crumb, .etu-hc .etu-radial-readout { border-width: 2px; }
+
 /* Furl and unfurl. Every wedge turns about the ring's center (--cx/--cy, set on the layer). */
-.etu-wedge, .etu-ring-backdrop { transform-box: view-box; transform-origin: var(--cx) var(--cy); }
+.etu-wedge, .etu-ring-backdrop, .etu-frame-group { transform-box: view-box; transform-origin: var(--cx) var(--cy); }
 .etu-leaving, .etu-leaving [data-act], .etu-radial.is-closing [data-act] { pointer-events: none; }
 .etu-radial.is-closing .etu-radial-crumb, .etu-radial.is-closing .etu-radial-readout { opacity: 0; transition: opacity 0.15s; }
 
@@ -112,7 +158,9 @@
     animation: etu-unfurl 0.24s cubic-bezier(0.2, 0.8, 0.25, 1) both;
     animation-delay: calc(var(--i) * 22ms);
   }
-  .etu-enter-open .etu-ring-backdrop { animation: etu-grow 0.2s ease-out both; }
+  .etu-enter-open .etu-ring-backdrop, .etu-enter-open .etu-frame-group { animation: etu-grow 0.22s ease-out both; }
+  /* Dividers fade in once the wedges are placed, then pulse in a slow wave around the ring. */
+  .etu-layer[class*="etu-enter-"] .etu-dividers { animation: etu-fade-in 0.3s 0.18s both; }
   /* Drilling up: the parent ring settles back in from outside. */
   .etu-enter-up .etu-wedge {
     animation: etu-settle 0.24s cubic-bezier(0.2, 0.8, 0.25, 1) both;
@@ -129,7 +177,9 @@
     animation-delay: calc(var(--i) * 10ms);
   }
   .etu-leave-page .etu-wedge { animation: etu-turn-out 0.15s ease-in both; }
-  .etu-leaving .etu-ring-backdrop, .etu-leave-close .etu-ring-backdrop { animation: etu-fade 0.18s ease-in both; }
+  .etu-leaving .etu-ring-backdrop, .etu-leave-close .etu-ring-backdrop,
+  .etu-leaving .etu-dividers, .etu-leaving .etu-frame-group { animation: etu-fade 0.18s ease-in both; }
+  .etu-leave-close .etu-frame-group { animation: etu-furl 0.18s ease-in both; }
   .etu-leave-close .etu-center { animation: etu-fade 0.18s ease-in both; }
 
   @keyframes etu-unfurl { from { opacity: 0; transform: rotate(-40deg) scale(0.45); } to { opacity: 1; transform: none; } }
@@ -140,6 +190,8 @@
   @keyframes etu-turn-out { to { opacity: 0; transform: rotate(22deg); } }
   @keyframes etu-grow { from { opacity: 0; transform: scale(0.4); } }
   @keyframes etu-fade { to { opacity: 0; } }
+  @keyframes etu-fade-in { from { opacity: 0; } }
+
 }
 
 /* Item sheet section (the system's light or dark sheet; no colors of our own). */

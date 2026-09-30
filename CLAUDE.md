@@ -4,7 +4,7 @@ Read this first in any new session. The design, the conditions, and open decisio
 
 ## What this is
 
-A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.4.0.
+A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.5.0.
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
@@ -12,7 +12,7 @@ Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
 Verified in Foundry by the user: pips on PC and unlinked NPC tokens; macro API; radial menu opens on right-click and all rings click through; Shift + right-click opens Foundry's HUD; right-drag panning still works; the table used the ring for a full Silver Hail spin-up and called it smooth.
 
-Not yet tested in Foundry: Mount on item sheets and the trimmed Hacked ring; connection-loss recovery; ring icons and furl/unfurl animation.
+Not yet tested in Foundry: Mount on item sheets; connection-loss recovery; the mod frame and gliding dividers; high contrast. The look was reviewed by the user and table in the live preview (https://claude.ai/artifact/2RKzhyr5YUuKpYhtbDZztm), which runs the real ring code bundled with esbuild in the session scratchpad (not in the repo).
 
 Next: GM-defined conditions (SCOPE §3.8), the Recoil cap question, then a v1.0 release.
 
@@ -29,6 +29,7 @@ Next: GM-defined conditions (SCOPE §3.8), the Recoil cap question, then a v1.0 
 npm run check   # lint + load + rules. Run before every push.
 npm run load    # imports every module file with Foundry mocked and runs init
 npm run rules   # condition store, item systems, right-click routing, string keys
+npm run contrast # WCAG AA for ring/pip text in both palettes; JS colours must match CSS tokens
 npm run preview # real radial menu in Chromium with Foundry mocked; screenshots to tools/out/
                 # set CHROMIUM_PATH (here: /opt/pw-browsers/chromium)
 ```
@@ -43,7 +44,9 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 - **Cypher tags are read-only to us.** Toggling a tag archives items; never toggle one.
 - **All writes for one actor go through the queue in `store.js`,** read and write in one step, with a time limit.
 - **Ring icons are our own SVG symbols** (`scripts/icons.js`), not Foundry files or fonts, so they match everywhere.
-- **Motion respects reduced-motion.** Animations live in CSS; `motionAllowed()` skips the furl delay.
+- **Motion respects reduced-motion.** Animations live in CSS; `motionAllowed()` skips the furl delay and the divider glide (SMIL `<animate>`, which CSS can't switch off).
+- **Gold means nothing special.** A gold highlight on submenu wedges read as "important" to players. "Opens another ring" is an outward double chevron in the frame's colour.
+- **Colours:** condition colours live in `PALETTES` (conditions.js), per player via the `contrast` setting. Filled gauge cells compute their fill and label colour in JS (`color.js`); `SURFACE`/`LABEL` there must match the CSS tokens, which `npm run contrast` checks.
 - **Visual modules are optional** and sit behind an adapter that fails quietly.
 
 ## Lessons carried over from the Fallhammer Quest Log
@@ -75,9 +78,10 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 | `scripts/item-sheet.js` | "ETU system" Mount setting in the Cypher item sheet's Settings tab |
 | `scripts/pips.js` | condition pips drawn above tokens (min 20 screen px tall at any zoom) |
 | `scripts/radial.js` | radial token menu: rings, gauges, keys, wheel, paging, readout, transitions |
-| `scripts/icons.js` | line icons for the ring, as SVG symbols |
+| `scripts/icons.js` | line icons for the ring (incl. flame/snowflake by intensity) and the frame's plate gradients |
+| `scripts/color.js` | luminance, contrast, mixes, and readable label choice for filled cells |
 | `scripts/settings.js` | player edit rights per condition, pip toggle |
-| `styles/etu.css` | ring styles and furl/unfurl animation, colors through `--etu-*` tokens |
+| `styles/etu.css` | ring styles, mod frame, dividers, furl/unfurl, high contrast; colours via `--etu-*` tokens |
 | `tools/` | Foundry mock, load check, store/item/routing checks, Chromium ring preview |
 | `docs/SCOPE.md` | scope, conditions, spec, open decisions |
 | `docs/TESTING.md` | install notes, test steps, and macros for the user |

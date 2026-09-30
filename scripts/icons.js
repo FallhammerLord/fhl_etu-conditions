@@ -70,5 +70,9 @@ export function iconDefs()
 {
    const symbols = Object.entries(ICONS).map(([name, body]) =>
       `<symbol id="etu-icon-${name}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</symbol>`);
-   return `<defs>${symbols.join('')}</defs>`;
+   // The frame's metal plate, from the Cypher Card Sheet's cap gradient.
+   const plate = '<linearGradient id="etu-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b4bfcb"/><stop offset="1" stop-color="#505a67"/></linearGradient>';
+   // High contrast: the Card Sheet's colour-blind-friendly green plate.
+   const plateHc = '<linearGradient id="etu-plate-hc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10a877"/><stop offset="1" stop-color="#004d36"/></linearGradient>';
+   return `<defs>${plate}${plateHc}${symbols.join('')}</defs>`;
 }

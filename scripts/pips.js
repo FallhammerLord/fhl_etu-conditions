@@ -5,7 +5,7 @@
 
 import { CONDITIONS, CONDITION_ORDER, HACKED } from './conditions.js';
 import { getConditions } from './store.js';
-import { showPips } from './settings.js';
+import { highContrast, showPips } from './settings.js';
 import { activeTokens, canvasZoom, makePip } from './compat.js';
 
 const CHILD = 'etuPips';
@@ -28,7 +28,7 @@ function pipList(conditions)
       const level = conditions[key];
       if (level) { list.push([CONDITIONS[key].pip(level), CONDITIONS[key].pipColor(level)]); }
    }
-   if (conditions.hacked.length) { list.push([HACKED.pip(conditions.hacked.length), HACKED.color]); }
+   if (conditions.hacked.length) { list.push([HACKED.pip(conditions.hacked.length), HACKED.pipColor()]); }
    return list;
 }
 
@@ -54,7 +54,7 @@ export function drawPips(token)
    let x = 0;
    for (const [label, color] of list)
    {
-      const pip = makePip(label, color, height);
+      const pip = makePip(label, color, height, { solid: highContrast() });
       pip.position.set(x, 0);
       row.addChild(pip);
       x += pip.pipWidth + gap;

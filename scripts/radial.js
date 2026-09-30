@@ -5,12 +5,13 @@
  */
 
 import { MODULE_ID } from './constants.js';
-import { CONDITIONS, temperatureStep } from './conditions.js';
+import { CONDITIONS, conditionColor, temperatureStep } from './conditions.js';
 import { adjustLevel, clearConditions, getLevel, setHack, setLevel } from './store.js';
-import { canEdit } from './settings.js';
+import { canEdit, highContrast } from './settings.js';
 import { resolveActors } from './api.js';
 import { artOf, hackOf, mountOf, unitSystems } from './items.js';
 import { iconDefs, iconId, temperatureIcon } from './icons.js';
+import { LABEL, SURFACE, WITHIN_MIX, mix, readableOn } from './color.js';
 import {
    closeCoreHud, controlToken, controlledTokens, openCoreHud, tokenScreenGeometry,
    toggleCombat, toggleHidden, toggleTarget
@@ -23,6 +24,12 @@ const MAX_INNER = 150;
 const MAX_SLICES = 8;
 const GAUGE_START = 225;
 const GAUGE_SWEEP = 270;
+
+/** Seconds for the divider wave to go once round the ring. */
+const SPARK_LAP = 12.8;
+
+/** Half the seam between neighbouring wedges, in degrees; the glowing dividers sit in it. */
+const WEDGE_GAP = 0.4;
 
 /** A right-button release this far (screen px) from the press was a canvas pan, not a click. */
 const PAN_THRESHOLD = 6;
@@ -101,6 +108,26 @@ export function labelLines(label)
    return [clip(words.slice(0, best).join(' ')), clip(words.slice(best).join(' '))];
 }
 
+/**
+ * A small tapered tab across a ring edge, centred on an angle.
+ *
+ * @param {number} c - Centre (x and y).
+ * @param {number} rBase - Radius where the tab meets the ring.
+ * @param {number} rTip - Radius of the tab's far end (larger = outward, smaller = inward).
+ * @param {number} angle - Centre angle.
+ * @param {number} baseHalf - Half-width at the base, in degrees.
+ * @param {number} tipHalf - Half-width at the tip, in degrees.
+ * @returns {string} SVG path.
+ */
+function tab(c, rBase, rTip, angle, baseHalf, tipHalf)
+{
+   const pts = [
+      polar(c, c, rBase, angle - baseHalf), polar(c, c, rTip, angle - tipHalf),
+      polar(c, c, rTip, angle + tipHalf), polar(c, c, rBase, angle + baseHalf)
+   ];
+   return `M${pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join('L')}Z`;
+}
+
 /** Creates an SVG element with attributes and optional text. */
 function svg(name, attrs = {}, text)
 {
@@ -169,7 +196,7 @@ function hackGauge(item)
       set: (_actors, v) => setHack(item.parent, item.id, v),
       nudge: (_actors, d) => setHack(item.parent, item.id, Math.max(0, Math.min(10, read() + d))),
       cell: (v) => String(v),
-      color: () => '#d0574e',
+      color: () => conditionColor('hacked'),
       value: (v) => (v ? String(v) : t('none.hacked')),
       note: (v) => (v ? tf('note.hacked', { level: v, name: item.name }) : tf('note.hackedOff', { name: item.name }))
    };
@@ -493,8 +520,8 @@ class RadialMenu
       const geo = tokenScreenGeometry(this.token);
       const r0 = Math.min(MAX_INNER, Math.max(MIN_INNER, Math.round(geo.radius + 8)));
       const r1 = r0 + RING_WIDTH;
-      const size = (r1 + 22) * 2;
-      const margin = r1 + 12;
+      const size = (r1 + 32) * 2;
+      const margin = r1 + 28;
       const x = Math.min(window.innerWidth - margin, Math.max(margin, geo.x));
       const y = Math.min(window.innerHeight - margin, Math.max(margin, geo.y));
       return { x, y, r0, r1, size, c: size / 2 };
@@ -572,6 +599,7 @@ class RadialMenu
       this.drawnR0 = r0;
       this.renderSeq = (this.renderSeq ?? 0) + 1;
       Object.assign(this.root.style, { left: `${x}px`, top: `${y}px` });
+      this.root.classList.toggle('etu-hc', highContrast());
 
       const surface = this.root.querySelector('svg');
       surface.setAttribute('width', size);
@@ -594,11 +622,13 @@ class RadialMenu
          class: `etu-layer${transition ? ` etu-enter-${transition}` : ''}`,
          style: `--cx: ${c}px; --cy: ${c}px`
       });
-      layer.append(svg('circle', { cx: c, cy: c, r: r1 + 6, class: 'etu-ring-backdrop' }));
+      layer.append(svg('circle', { cx: c, cy: c, r: r1 + 10, class: 'etu-ring-backdrop' }));
 
       const { node, trail } = this.current();
-      if (node.type === 'group') { this.renderGroup(layer, node, actor, c, r0, r1); }
-      else if (node.type === 'gauge') { this.renderGauge(layer, node, actor, c, r0, r1); }
+      let frame = { dividers: [], deeper: [] };
+      if (node.type === 'group') { frame = this.renderGroup(layer, node, actor, c, r0, r1); }
+      else if (node.type === 'gauge') { frame = this.renderGauge(layer, node, actor, c, r0, r1); }
+      this.renderFrame(layer, c, r0, r1, frame);
 
       layer.append(svg('circle', { cx: c, cy: c, r: r0 - 3, class: 'etu-center', 'data-act': 'back' }));
       surface.append(layer);
@@ -606,8 +636,8 @@ class RadialMenu
       const count = this.targets().length;
       const crumb = this.root.querySelector('.etu-radial-crumb');
       crumb.textContent = trail.join('  ›  ') + (count > 1 ? `  ·  ${tf('menu.selected', { count })}` : '');
-      crumb.style.top = `${-r1 - 46}px`;
-      this.root.querySelector('.etu-radial-readout').style.top = `${r1 + 26}px`;
+      crumb.style.top = `${-r1 - 54}px`;
+      this.root.querySelector('.etu-radial-readout').style.top = `${r1 + 32}px`;
       this.renderReadout();
    }
 
@@ -618,15 +648,16 @@ class RadialMenu
       {
          layer.append(svg('circle', { cx: c, cy: c, r: (r0 + r1) / 2, class: 'etu-empty-ring' }));
          layer.append(svg('text', { x: c, y: c - r0 - 14, class: 'etu-slice-label' }, node.empty ?? ''));
-         return;
+         return { dividers: [], deeper: [] };
       }
       const n = slices.length;
       const span = 360 / n;
+      const frame = { dividers: n > 1 ? slices.map((_, i) => i * span - span / 2) : [], deeper: [] };
       slices.forEach((s, i) =>
       {
          const mid = i * span;
-         const a0 = mid - span / 2 + 1.5;
-         const a1 = mid + span / 2 - 1.5;
+         const a0 = mid - span / 2 + WEDGE_GAP;
+         const a1 = mid + span / 2 - WEDGE_GAP;
          const locked = s.type === 'gauge' && !s.gauge.editable(actor);
          const cls = ['etu-slice', `etu-slice-${s.type}`, locked ? 'is-locked' : '',
             this.hot?.kind === 'slice' && this.hot.i === i ? 'is-hot' : ''].filter(Boolean).join(' ');
@@ -634,6 +665,9 @@ class RadialMenu
          const wedge = svg('g', { class: 'etu-wedge', style: `--i: ${i}` });
          layer.append(wedge);
          wedge.append(svg('path', { d: n === 1 ? sector(c, c, r0, r1, 0.01, 359.99) : sector(c, c, r0, r1, a0, a1), class: cls, 'data-act': 'slice', 'data-i': i }));
+         // Wedges that open another ring get a gold arc on the frame above them.
+         // Wedges that open another ring: an outward double chevron on the frame ("go deeper").
+         if (s.type === 'group' || s.type === 'more') { frame.deeper.push(mid); }
 
          const [lx, ly] = polar(c, c, (r0 + r1) / 2, mid);
          // Faint texture behind the label: the system's own card art if it has some, else a line icon.
@@ -668,17 +702,13 @@ class RadialMenu
                style: `fill: ${s.type !== 'gauge' ? 'var(--etu-accent)' : level ? s.gauge.color(level) : 'var(--etu-muted)'}`
             }, value));
          }
-         if (s.type === 'group' || s.type === 'more')
-         {
-            const [dx, dy] = polar(c, c, r1 - 7, mid);
-            wedge.append(svg('circle', { cx: dx, cy: dy, r: 2.5, class: 'etu-drill-dot' }));
-         }
          if (i < 9)
          {
-            const [nx, ny] = polar(c, c, r1 + 14, mid);
+            const [nx, ny] = polar(c, c, r1 + 21, mid);
             wedge.append(svg('text', { x: nx, y: ny + 4, class: 'etu-slice-key' }, String(i + 1)));
          }
       });
+      return frame;
    }
 
    renderGauge(layer, node, actor, c, r0, r1)
@@ -691,8 +721,8 @@ class RadialMenu
       const signed = levels[0] < 0;
       levels.forEach((v, i) =>
       {
-         const a0 = GAUGE_START + i * w + 1;
-         const a1 = GAUGE_START + (i + 1) * w - 1;
+         const a0 = GAUGE_START + i * w + WEDGE_GAP;
+         const a1 = GAUGE_START + (i + 1) * w - WEDGE_GAP;
          const mid = GAUGE_START + (i + 0.5) * w;
          const active = v === current;
          const within = signed
@@ -704,7 +734,11 @@ class RadialMenu
          const wedge = svg('g', { class: 'etu-wedge', style: `--i: ${i}` });
          layer.append(wedge);
          const attrs = { d: sector(c, c, r0 + 8, r1, a0, a1), class: cls, 'data-act': 'cell', 'data-v': v };
-         if (active || within) { attrs.style = `fill: ${gauge.color(v)}`; }
+         // Filled cells: the condition's colour (active) or a solid mix of it (within the level), with
+         // whichever label colour reads better on that fill.
+         const suite = highContrast() ? 'contrast' : 'standard';
+         const fill = active ? gauge.color(v) : within ? mix(gauge.color(v), SURFACE[suite], WITHIN_MIX[suite]) : null;
+         if (fill) { attrs.style = `fill: ${fill}`; }
          wedge.append(svg('path', attrs));
          const [lx, ly] = polar(c, c, (r0 + 8 + r1) / 2, mid);
          const cellIcon = gauge.cellIcon?.(v);
@@ -717,7 +751,9 @@ class RadialMenu
                class: `etu-cell-icon${active ? ' is-active' : ''}`
             }));
          }
-         wedge.append(svg('text', { x: lx, y: ly + 4, class: `etu-cell-label${active ? ' is-active' : ''}` }, gauge.cell(v)));
+         const label = { x: lx, y: ly + 4, class: `etu-cell-label${active ? ' is-active' : ''}` };
+         if (fill) { label.style = `fill: ${readableOn(fill, LABEL[suite])}`; }
+         wedge.append(svg('text', label, gauge.cell(v)));
       });
       // The gap at the bottom holds the condition's icon and the way back.
       const gap = svg('g', { class: 'etu-wedge etu-gauge-gap', style: `--i: ${levels.length}` });
@@ -726,6 +762,82 @@ class RadialMenu
       const iconSize = 26;
       gap.append(svg('use', { href: `#${iconId(node.icon)}`, x: gx - iconSize / 2, y: gy - iconSize - 2, width: iconSize, height: iconSize, class: 'etu-gap-icon' }));
       gap.append(svg('text', { x: gx, y: gy + 12, class: 'etu-slice-key' }, `◂ ${t('menu.back')}`));
+      return { dividers: levels.map((_, i) => GAUGE_START + i * w).concat(GAUGE_START + GAUGE_SWEEP), deeper: [] };
+   }
+
+   /**
+    * The frame, after Warframe's mod borders: one plate rim around the whole wheel with a bright edge,
+    * a chevron at every wedge break pointing in along its divider, small tabs out of the frame and in
+    * from the centre rim at each break, an outward double chevron over each wedge that opens another
+    * ring, and a thin plate rim round the centre. Each divider is a dim glowing gradient line with a
+    * bright point that glides from the centre outward.
+    *
+    * @param {SVGGElement} layer - The ring layer.
+    * @param {number} c - Centre.
+    * @param {number} r0 - Inner radius.
+    * @param {number} r1 - Outer radius.
+    * @param {{ dividers: number[], deeper: number[] }} frame - Divider angles, and the centre angles of
+    *   wedges that open another ring.
+    */
+   renderFrame(layer, c, r0, r1, { dividers, deeper })
+   {
+      const glow = svg('g', { class: 'etu-dividers' });
+      const moving = motionAllowed();
+      dividers.forEach((angle, i) =>
+      {
+         // Each divider is one gradient line, centre to rim: dim along its length, with a bright point
+         // that glides outward. Phases are spread evenly, so the points make a slow wave round the ring.
+         const [x1, y1] = polar(c, c, r0 + 1, angle);
+         const [x2, y2] = polar(c, c, r1 - 1, angle);
+         const id = `etu-div-${this.renderSeq}-${i}`;
+         const grad = svg('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1, y1, x2, y2 });
+         const point = moving ? -0.3 : 1.3;
+         const stops = [[0, 'dim'], [point - 0.28, 'dim'], [point, 'bright'], [point + 0.28, 'dim'], [1, 'dim']];
+         stops.forEach(([offset, kind], j) =>
+         {
+            const stop = svg('stop', { offset, class: `etu-div-${kind}` });
+            if (moving && j >= 1 && j <= 3)
+            {
+               const shift = offset - point;
+               stop.append(svg('animate', {
+                  attributeName: 'offset',
+                  values: `${-0.3 + shift};${1.3 + shift};${1.3 + shift}`,
+                  keyTimes: '0;0.6;1',
+                  dur: `${SPARK_LAP}s`,
+                  begin: `${-SPARK_LAP * (i / Math.max(1, dividers.length))}s`,
+                  repeatCount: 'indefinite',
+                  calcMode: 'spline',
+                  keySplines: '0.45 0 0.55 1;0 0 1 1'
+               }));
+            }
+            grad.append(stop);
+         });
+         glow.append(grad);
+         glow.append(svg('line', { x1, y1, x2, y2, class: 'etu-divider', stroke: `url(#${id})` }));
+      });
+      layer.append(glow);
+
+      const g = svg('g', { class: 'etu-frame-group' });
+      const rf = r1 + 6;
+      g.append(svg('circle', { cx: c, cy: c, r: rf, class: 'etu-frame' }));
+      g.append(svg('circle', { cx: c, cy: c, r: rf + 3.6, class: 'etu-frame-edge' }));
+      g.append(svg('circle', { cx: c, cy: c, r: rf - 3.6, class: 'etu-frame-inner' }));
+      g.append(svg('circle', { cx: c, cy: c, r: r0 - 0.5, class: 'etu-frame-rim' }));
+      for (const angle of dividers)
+      {
+         // Greebles at every break: a tapered tab out from the frame and one in from the centre rim.
+         g.append(svg('path', { d: tab(c, rf + 3.2, rf + 9, angle, 2.6, 1.3), class: 'etu-greeble' }));
+         g.append(svg('path', { d: tab(c, r0 - 0.5, r0 - 7, angle, 3.4, 1.6), class: 'etu-greeble' }));
+         const [x, y] = polar(c, c, rf, angle);
+         g.append(svg('path', { d: 'M-2.4,-3.2L1.6,0L-2.4,3.2', transform: `translate(${x} ${y}) rotate(${angle + 90})`, class: 'etu-chevron' }));
+      }
+      for (const angle of deeper)
+      {
+         // Two stacked chevrons pointing outward: this wedge leads further in.
+         const [x, y] = polar(c, c, rf, angle);
+         g.append(svg('path', { d: 'M-3.2,-3.4L0.2,0L-3.2,3.4M0.4,-3.4L3.8,0L0.4,3.4', transform: `translate(${x} ${y}) rotate(${angle - 90})`, class: 'etu-deeper' }));
+      }
+      layer.append(g);
    }
 
    renderReadout()

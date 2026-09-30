@@ -102,11 +102,19 @@ The GM adds conditions in Module Settings: name, kind (on/off or a level range),
 - Click the token in the center, press Esc, or right-click the ring: back up one ring. At the root, the ring furls closed.
 - Click outside: the ring furls closed.
 
-**Look**
-- Each wedge carries a faint line icon as a texture behind its label.
-- Opening and drilling down: wedges unfurl outward from the center, one after another. Drilling up: the parent ring settles back in from outside while the child furls into the center. Paging turns the wedges over. Closing furls the ring into the center.
-- Gauge rings sweep their cells in around the arc; the gap at the bottom shows the condition's icon and "back".
-- All motion is off when the player's system asks for reduced motion.
+**Look** (reviewed by the user and table, 2026-09-30)
+- **Mod frame,** after Warframe's mod borders: one metal plate rim around the whole wheel (the Cypher Card Sheet's plate gradient) and a thin plate rim round the centre. Wedges have no outlines of their own.
+- **At every wedge break:** a chevron on the frame pointing in, a small tapered tab out of the frame, and one in from the centre rim.
+- **Dividers:** one gold gradient line per break, with a bright point that glides from the centre to the rim, staggered round the ring (about 12.8 s per lap).
+- **"Opens another ring":** an outward double chevron on the frame over the wedge, in the frame's own colour. Gold highlights were tried and dropped: players read them as "important".
+- **Textures:** each wedge carries a faint line icon, or the system's own card art on Hacked. Temperature uses flames and snowflakes that grow more elaborate with distance from Normal.
+- **Motion:** opening and drilling down unfurl the wedges outward in sequence; drilling up settles the parent ring back in while the child furls into the centre; paging turns the wedges; closing furls the ring away. Gauge cells sweep in around the arc.
+- **Reduced motion** turns off all animation, including the divider glide.
+
+**Contrast** (Module Settings → Ring and pip colours, per player)
+- **Standard:** the Cypher Card Sheet's dark theme colours.
+- **High contrast:** colour-blind-friendly Okabe-Ito condition colours, with Temperature's blue-to-orange scale kept apart from the other conditions; the Card Sheet's high-contrast green frame with mint edges and dividers; solid pips with dark text; brighter labels; textures kept.
+- Every label, value, pip, and filled gauge cell is checked at WCAG AA (4.5:1) in both palettes by `npm run contrast`. Filled cells pick light or dark text per fill.
 
 **Behavior**
 - Root ring: Thermal, Signal (Target Lock, Jammed), Recoil, Hacked (one gauge per system), Token (Target, Combat, Hide/Reveal, Foundry HUD), Clear all.

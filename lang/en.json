@@ -25,6 +25,12 @@
         "recoil": { "name": "Players set Recoil" },
         "hacked": { "name": "Players set Hacked systems" }
       },
+      "contrast": {
+        "name": "Ring and pip colours",
+        "hint": "High contrast uses colour-blind-friendly colours, a green frame, solid pips with dark text, and brighter labels. Just for you; other players keep their own choice.",
+        "standard": "Standard",
+        "high": "High contrast"
+      },
       "showPips": {
         "name": "Show condition pips on tokens",
         "hint": "Small labels above each token showing its active conditions and levels."
