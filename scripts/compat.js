@@ -87,3 +87,73 @@ export function makePip(label, color, height)
    pip.pipWidth = width;
    return pip;
 }
+
+/**
+ * Routes right-clicks on tokens to `handler`. Extends whatever token class is configured at `init`
+ * (the Cypher System sets its own), so its ruler and any other module's subclass keep working.
+ * Shift + right-click, or a handler that returns false, falls through to Foundry's Token HUD.
+ *
+ * @param {(token: Token, event: PIXI.FederatedEvent) => boolean} handler - Returns true if it handled the click.
+ */
+export function installTokenRightClick(handler)
+{
+   const Base = CONFIG.Token.objectClass;
+   class EtuToken extends Base
+   {
+      _onClickRight(event)
+      {
+         const shift = event?.shiftKey ?? game.keyboard?.isModifierActive?.('Shift');
+         if (shift || !handler(this, event)) { return super._onClickRight(event); }
+      }
+   }
+   Object.defineProperty(EtuToken, 'name', { value: `Etu${Base.name}` });
+   CONFIG.Token.objectClass = EtuToken;
+}
+
+/**
+ * @param {Token} token - The placeable.
+ * @returns {{ x: number, y: number, radius: number }} Token center and radius in screen pixels.
+ */
+export function tokenScreenGeometry(token)
+{
+   const { x, y } = globalThis.canvas.clientCoordinatesFromCanvas(token.center);
+   const radius = (Math.max(token.w, token.h) / 2) * canvasZoom();
+   return { x, y, radius };
+}
+
+/** @param {Token} token - Select this token (only it, unless it's already selected). */
+export function controlToken(token)
+{
+   if (!token.controlled) { token.control({ releaseOthers: true }); }
+}
+
+/** @param {Token} token - Toggle the current user's target on this token, keeping other targets. */
+export function toggleTarget(token)
+{
+   token.setTarget(!token.isTargeted, { releaseOthers: false });
+}
+
+/** @param {Token} token - Add the token to the current combat, or remove it. */
+export function toggleCombat(token)
+{
+   return token.document.toggleCombatant();
+}
+
+/** @param {Token} token - Show or hide the token (GM only). */
+export function toggleHidden(token)
+{
+   return token.document.update({ hidden: !token.document.hidden });
+}
+
+/** @param {Token} token - Open Foundry's own Token HUD on this token. */
+export function openCoreHud(token)
+{
+   return globalThis.canvas.tokens.hud?.bind(token);
+}
+
+/** Close Foundry's Token HUD if it is open. */
+export function closeCoreHud()
+{
+   const hud = globalThis.canvas?.tokens?.hud;
+   if (hud?.object) { hud.clear?.(); }
+}

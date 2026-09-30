@@ -36,3 +36,18 @@ What to look for:
 7. No errors in the console (F12). If something breaks, a screenshot of the console helps most.
 
 Optional check: `canvas.tokens.controlled[0].actor.statuses` should list IDs like `etu-temperature` while a condition is on.
+
+## Milestone 3 checks: radial menu
+
+Right-click a token you own.
+
+1. A ring opens around the token: Thermal, Signal, Recoil, Hacked, Token, Clear all. Values show on the slices (e.g. HOT, 4).
+2. Click Signal, then Target Lock: a gauge ring of 0–10. Click a cell to set it; the pip above the token updates.
+3. Mouse wheel over a gauge, or over Thermal/Recoil on the first ring, nudges ±1. The canvas should not zoom while you do this.
+4. Esc, right-click on the ring, or clicking the token in the middle goes back one ring; at the first ring it closes. Clicking elsewhere closes it.
+5. Keys 1–9 pick slices; ← → step a gauge. These should not fire your hotbar macros while the ring is open.
+6. Shift + right-click opens Foundry's normal Token HUD. Token → Foundry HUD does the same.
+7. Select two tokens, right-click one of them, set a condition: both change. The breadcrumb says "2 selected".
+8. Hacked lists the unit's attacks, equipment, armor, and artifacts. More than seven adds a "More" slice that pages.
+9. Pan and zoom with the ring open: it follows the token and stays the same size.
+10. As a player: GM-only conditions look dimmed and show a warning when clicked.

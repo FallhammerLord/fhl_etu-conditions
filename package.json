@@ -7,11 +7,13 @@
     "lint": "eslint scripts tools",
     "load": "node tools/load-check.mjs",
     "rules": "node tools/rules-check.mjs",
-    "check": "npm run lint && npm run load && npm run rules"
+    "check": "npm run lint && npm run load && npm run rules",
+    "preview": "node tools/radial-preview.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "eslint": "^9.0.0",
-    "globals": "^15.0.0"
+    "globals": "^15.0.0",
+    "playwright": "^1.63.0"
   }
 }

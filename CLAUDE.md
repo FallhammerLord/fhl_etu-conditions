@@ -8,7 +8,7 @@ A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a 
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
-Status: milestones 1–2 written (skeleton, condition store, token pips, macro API). Not yet tested in Foundry. Next: milestone 3, the radial menu (mockup in `docs/mockups/radial-menu.html`).
+Status: milestones 1–3 written. Pips and the macro API are verified in Foundry by the user. The radial menu (milestone 3) passes the offline Chromium preview but is not yet tested in Foundry. Next: milestone 4, roll dialog pre-fill.
 
 ## Working with the user
 
@@ -21,7 +21,9 @@ Status: milestones 1–2 written (skeleton, condition store, token pips, macro A
 ```sh
 npm run check   # lint + load + rules. Run before every push.
 npm run load    # imports every module file with Foundry mocked and runs init
-npm run rules   # rules math, plus the condition store against an in-memory actor
+npm run rules   # rules math, condition store, right-click routing, string keys
+npm run preview # real radial menu in Chromium with Foundry mocked; screenshots to tools/out/
+                # set CHROMIUM_PATH (here: /opt/pw-browsers/chromium)
 ```
 
 ## Design rules
@@ -53,7 +55,9 @@ npm run rules   # rules math, plus the condition store against an in-memory acto
 | `scripts/store.js` | read/write levels and hack ratings, per-actor write queue, permissions |
 | `scripts/api.js` | public macro API (`game.modules.get(id).api`) |
 | `scripts/rules.js` | pure rules math: temperature cost, lock vs jam, signal cutoff, Drain |
-| `scripts/pips.js` | condition pips drawn above tokens |
+| `scripts/pips.js` | condition pips drawn above tokens (min 20 screen px tall at any zoom) |
+| `scripts/radial.js` | radial token menu: rings, gauges, keys, wheel, paging, readout |
+| `styles/etu.css` | radial menu styles, colors through `--etu-*` tokens |
 | `scripts/settings.js` | player edit rights per condition, pip toggle |
 | `tools/` | Foundry mock, load check, rules and store checks |
 | `docs/SCOPE.md` | scope, rules as implemented, spec, milestones, open decisions |

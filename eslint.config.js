@@ -26,5 +26,10 @@ export default [
    {
       files: ['tools/**/*.mjs', 'eslint.config.js'],
       languageOptions: { globals: { ...globals.node, game: 'readonly', CONFIG: 'readonly' } }
+   },
+   {
+      // Code passed to page.evaluate runs in the browser.
+      files: ['tools/radial-preview.mjs'],
+      languageOptions: { globals: { ...globals.node, ...globals.browser } }
    }
 ];

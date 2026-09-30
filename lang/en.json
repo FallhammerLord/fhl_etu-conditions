@@ -30,6 +30,56 @@
         "hint": "Small labels above each token showing its active conditions and levels."
       }
     },
+    "menu": {
+      "thermal": "Thermal",
+      "signal": "Signal",
+      "token": "Token",
+      "clearAll": "Clear all",
+      "more": "More",
+      "target": "Target",
+      "untarget": "Untarget",
+      "joinCombat": "Join combat",
+      "leaveCombat": "Leave combat",
+      "hide": "Hide",
+      "reveal": "Reveal",
+      "foundryHud": "Foundry HUD",
+      "back": "back",
+      "hackedCount": "{count} sys",
+      "noSystems": "No weapons or gear to hack",
+      "selected": "{count} selected",
+      "wheelHint": "wheel ±1",
+      "runsNow": "Runs now",
+      "opensRing": "Opens a ring of options"
+    },
+    "none": {
+      "targetLock": "No lock",
+      "jammed": "Clear",
+      "recoil": "Stable",
+      "hacked": "Secure"
+    },
+    "value": {
+      "hack": "Hack rating {level}"
+    },
+    "note": {
+      "temperature": {
+        "freezing": "Reactor and Strain Effort cost +3 each",
+        "cold": "Reactor Effort cost +1 each",
+        "chill": "Operates normally",
+        "normal": "Operates normally",
+        "warm": "Operates normally",
+        "hot": "Reactor Effort cost +1 each",
+        "overheating": "Reactor and Frame Effort cost +3 each",
+        "npc": "NPC outside Normal: takes ambient damage instead"
+      },
+      "targetLock": "Signal attacks against this unit eased by {level}, minus the attacker's Jammed level",
+      "targetLockOff": "Signal attacks get no easing",
+      "jammed": "Signal-reliant tasks hindered by {level}; signals of level {level} or lower fail",
+      "jammedOff": "Signals work normally",
+      "recoil": "Hard Point attacks hindered by {level} until the end of this unit's next turn",
+      "recoilOff": "No kickback",
+      "hacked": "Reactor test against {level} before using {name}",
+      "hackedOff": "{name} is not compromised"
+    },
     "warn": {
       "notOwner": "You don't own {name}, so you can't change its conditions.",
       "gmOnly": "Only the GM can change this condition. The GM can allow it in Module Settings.",

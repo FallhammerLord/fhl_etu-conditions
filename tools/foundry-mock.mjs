@@ -27,7 +27,12 @@ globalThis.game = {
    },
    modules: new Map([['fhl-etu-conditions', {}]])
 };
-globalThis.CONFIG = { statusEffects: [] };
+/** Stand-in for the token class the Cypher System configures; counts core right-clicks. */
+class MockToken
+{
+   _onClickRight() { this.coreRightClick = (this.coreRightClick ?? 0) + 1; }
+}
+globalThis.CONFIG = { statusEffects: [], Token: { objectClass: MockToken } };
 globalThis.CONST = { ACTIVE_EFFECT_SHOW_ICON: { NEVER: 0, CONDITIONAL: 1, ALWAYS: 2 } };
 globalThis.ui = { notifications: { warn: (m) => warnings.push(m), info: () => {} } };
 globalThis.foundry = { canvas: { containers: {} }, utils: any };

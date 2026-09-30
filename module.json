@@ -2,7 +2,7 @@
   "id": "fhl-etu-conditions",
   "title": "ETU Conditions",
   "description": "Ether-Tech unit conditions for the Cypher System: Temperature, Target Lock, Jammed, Recoil, and Hacked, tracked on tokens.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "authors": [
     {
       "name": "FallhammerLord",
@@ -27,6 +27,9 @@
   },
   "esmodules": [
     "scripts/main.js"
+  ],
+  "styles": [
+    "styles/etu.css"
   ],
   "languages": [
     {

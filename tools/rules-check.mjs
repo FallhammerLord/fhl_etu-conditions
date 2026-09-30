@@ -235,4 +235,59 @@ await test('player permissions follow the settings', async () =>
    game.user.isGM = true;
 });
 
+// ---- Right-click routing and strings ----------------------------------------------------
+
+await test('right-click opens the menu; Shift or a refusal falls through to Foundry', async () =>
+{
+   const { radialMenu } = await import('../scripts/radial.js');
+   const opened = [];
+   const realOpen = radialMenu.open;
+   radialMenu.open = (token) => { opened.push(token); return token.menuOk; };
+   try
+   {
+      const Token = CONFIG.Token.objectClass;
+      const a = Object.assign(new Token(), { menuOk: true });
+      a._onClickRight({ shiftKey: false });
+      assert.equal(opened.length, 1);
+      assert.equal(a.coreRightClick, undefined, 'menu handled it; core HUD not called');
+      a._onClickRight({ shiftKey: true });
+      assert.equal(opened.length, 1, 'Shift skips the menu');
+      assert.equal(a.coreRightClick, 1, 'Shift reaches the core HUD');
+      const b = Object.assign(new Token(), { menuOk: false });
+      b._onClickRight({ shiftKey: false });
+      assert.equal(b.coreRightClick, 1, 'a refused open (e.g. not owner) falls through');
+   }
+   finally { radialMenu.open = realOpen; }
+});
+
+await test('every literal string key used in scripts exists in en.json', async () =>
+{
+   const { readFile, readdir } = await import('node:fs/promises');
+   const lang = JSON.parse(await readFile(new URL('../lang/en.json', import.meta.url), 'utf8'))[MOD];
+   const has = (key) => key.split('.').reduce((o, k) => o?.[k], lang) !== undefined;
+   const dir = new URL('../scripts/', import.meta.url);
+   const missing = [];
+   for (const file of await readdir(dir))
+   {
+      const src = await readFile(new URL(file, dir), 'utf8');
+      const keys = [
+         ...[...src.matchAll(/\btf?\('([\w.]+)'/g)].map((m) => m[1]),
+         ...[...src.matchAll(/(?<!flags\.)\$\{MODULE_ID\}\.([\w.]+)[`']/g)].map((m) => m[1])
+      ];
+      for (const key of keys) { if (!has(key)) { missing.push(`${file}: ${key}`); } }
+   }
+   // Keys built from a variable, checked by expanding them here.
+   for (const k of ['temperature', 'targetLock', 'jammed', 'recoil', 'hacked']) { if (!has(`condition.${k}`)) { missing.push(`condition.${k}`); } }
+   for (const k of ['freezing', 'cold', 'chill', 'normal', 'warm', 'hot', 'overheating'])
+   {
+      if (!has(`temperature.${k}`)) { missing.push(`temperature.${k}`); }
+      if (!has(`note.temperature.${k}`)) { missing.push(`note.temperature.${k}`); }
+   }
+   for (const k of ['targetLock', 'jammed', 'recoil'])
+   {
+      for (const key of [`none.${k}`, `note.${k}`, `note.${k}Off`, `settings.playerEdit.${k}.name`]) { if (!has(key)) { missing.push(key); } }
+   }
+   assert.deepEqual(missing, []);
+});
+
 console.log(`${passed} checks passed${process.exitCode ? ', some failed' : ''}.`);

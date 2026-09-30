@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Radial harness</title>
+<link rel="stylesheet" href="../styles/etu.css">
+<style>
+  body { margin: 0; background: #131b23; width: 100vw; height: 100vh; overflow: hidden; }
+  .fake-token { position: absolute; width: 100px; height: 100px; border-radius: 50%; background: #1f2a36; border: 3px solid #5aa6c9; }
+</style>
+</head>
+<body>
+<div class="fake-token" id="tok"></div>
+<script type="module">
+// Minimal browser-side Foundry mock for rendering the real radial menu (tools/radial-preview.mjs).
+const MOD = 'fhl-etu-conditions';
+const lang = (await (await fetch('../lang/en.json')).json())[MOD];
+const lookup = (key) => key.replace(`${MOD}.`, '').split('.').reduce((o, k) => o?.[k], lang) ?? key;
+const warnings = [];
+window.warnings = warnings;
+window.game = {
+   user: { isGM: true },
+   i18n: {
+      localize: lookup,
+      format: (key, data) => String(lookup(key)).replace(/\{(\w+)\}/g, (_, k) => data[k])
+   },
+   settings: { get: () => true },
+   keyboard: { isModifierActive: () => false }
+};
+window.CONFIG = { statusEffects: [], Token: { objectClass: class {} } };
+window.CONST = { ACTIVE_EFFECT_SHOW_ICON: { NEVER: 0 } };
+window.ui = { notifications: { warn: (m) => warnings.push(m) } };
+window.foundry = { canvas: { containers: {} } };
+window.fromUuidSync = () => null;
+
+let nextId = 1;
+class Effect
+{
+   constructor(actor, data) { Object.assign(this, { id: `e${nextId++}`, disabled: false }, structuredClone(data)); this.statuses = new Set(data.statuses); this.parent = actor; }
+   getFlag(s, k) { return this.flags?.[s]?.[k]; }
+   async update(d) { for (const [k, v] of Object.entries(d)) { const p = k.split('.'); let o = this; for (const x of p.slice(0, -1)) { o = o[x] ??= {}; } o[p.at(-1)] = v; } }
+   async delete() { this.parent.effects = this.parent.effects.filter((e) => e !== this); }
+}
+class Item
+{
+   constructor(parent, name, type, hack = 0) { Object.assign(this, { id: `i${nextId++}`, parent, name, type, flags: hack ? { [MOD]: { hack } } : {} }); }
+   getFlag(s, k) { return this.flags[s]?.[k]; }
+   async setFlag(s, k, v) { (this.flags[s] ??= {})[k] = v; }
+   async unsetFlag(s, k) { delete this.flags[s]?.[k]; }
+}
+const actor = {
+   name: 'Corvus', uuid: 'Actor.corvus', type: 'pc', documentName: 'Actor', isOwner: true, effects: [],
+   async createEmbeddedDocuments(_t, list) { const m = list.map((d) => new Effect(actor, d)); actor.effects.push(...m); return m; },
+   async deleteEmbeddedDocuments(_t, ids) { actor.effects = actor.effects.filter((e) => !ids.includes(e.id)); }
+};
+actor.items = [new Item(actor, 'Hard Point A', 'attack'), new Item(actor, 'Hard Point B', 'attack'), new Item(actor, 'Missile Bay', 'attack', 3), new Item(actor, 'Sensor Suite', 'equipment')];
+
+const el = document.getElementById('tok');
+const token = {
+   name: 'Corvus', actor, w: 100, h: 100, center: { x: 420, y: 330 }, controlled: true, isTargeted: false, inCombat: true,
+   document: { isOwner: true, hidden: false, toggleCombatant: async () => {} },
+   control() {}, setTarget(v) { this.isTargeted = v; }
+};
+el.style.left = `${token.center.x - 50}px`;
+el.style.top = `${token.center.y - 50}px`;
+window.canvas = {
+   stage: { scale: { x: 1 } },
+   clientCoordinatesFromCanvas: (p) => ({ x: p.x, y: p.y }),
+   tokens: { controlled: [token], hud: null, placeables: [token] }
+};
+
+const store = await import('../scripts/store.js');
+await store.setLevel(actor, 'temperature', 2);
+await store.setLevel(actor, 'recoil', 4);
+const { radialMenu } = await import('../scripts/radial.js');
+window.radialMenu = radialMenu;
+window.store = store;
+window.actor = actor;
+radialMenu.open(token);
+window.ready = true;
+</script>
+</body>
+</html>

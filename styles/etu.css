@@ -1,0 +1,94 @@
+/* ETU Conditions. Colors only through --etu-* tokens; condition colors come from the registry. */
+:root {
+  --etu-bg: #0e1318;
+  --etu-slice: #1c2530;
+  --etu-slice-hot: #2b3a4a;
+  --etu-line: #3a4858;
+  --etu-fg: #dde5ee;
+  --etu-muted: #8d9aa9;
+  --etu-accent: #d8b25a;
+  --etu-font-label: "Signika", "Segoe UI", system-ui, sans-serif;
+  --etu-font-data: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+.etu-radial {
+  position: fixed;
+  width: 0;
+  height: 0;
+  z-index: 100;
+  pointer-events: none;
+  font-family: var(--etu-font-label);
+}
+.etu-radial-svg {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+.etu-radial-svg [data-act] { pointer-events: all; cursor: pointer; }
+
+.etu-ring-backdrop { fill: var(--etu-bg); opacity: 0.55; }
+.etu-center { fill: transparent; stroke: var(--etu-accent); stroke-opacity: 0.35; }
+.etu-center:hover { stroke-opacity: 0.8; }
+
+.etu-slice { fill: var(--etu-slice); stroke: var(--etu-line); stroke-width: 1; }
+.etu-slice-group, .etu-slice-more { stroke: var(--etu-accent); stroke-width: 1.5; }
+.etu-slice.is-hot { fill: var(--etu-slice-hot); }
+.etu-slice.is-locked, .etu-cell.is-locked { opacity: 0.5; cursor: not-allowed; }
+.etu-empty-ring { fill: none; stroke: var(--etu-line); stroke-width: 70; opacity: 0.6; }
+
+.etu-slice-label {
+  fill: var(--etu-fg);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.etu-slice-value, .etu-slice-key, .etu-cell-label {
+  font-family: var(--etu-font-data);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.etu-slice-value { font-size: 11px; }
+.etu-slice-key { fill: var(--etu-muted); font-size: 10px; }
+.etu-drill-dot { fill: var(--etu-accent); pointer-events: none; }
+
+.etu-cell { fill: var(--etu-slice); stroke: var(--etu-line); stroke-width: 1; }
+.etu-cell.is-within { fill-opacity: 0.45; }
+.etu-cell.is-active { stroke: var(--etu-fg); stroke-width: 1.5; }
+.etu-cell.is-hot:not(.is-active):not(.is-within) { fill: var(--etu-slice-hot); }
+.etu-cell-label { fill: var(--etu-fg); font-size: 11px; font-weight: 600; }
+.etu-cell-label.is-active { fill: var(--etu-bg); }
+
+.etu-radial-crumb, .etu-radial-readout {
+  position: absolute;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--etu-bg);
+  border: 1px solid var(--etu-line);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.etu-radial-crumb {
+  padding: 2px 10px;
+  color: var(--etu-accent);
+  font-family: var(--etu-font-data);
+  font-size: 11px;
+}
+.etu-radial-readout {
+  display: grid;
+  gap: 2px;
+  padding: 6px 12px;
+  max-width: 360px;
+  white-space: normal;
+  width: max-content;
+}
+.etu-radial-readout[hidden] { display: none; }
+.etu-radial-readout strong { color: var(--etu-fg); font-size: 13px; }
+.etu-radial-readout span { color: var(--etu-muted); font-size: 12px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .etu-ring-in { animation: etu-ring-in 0.14s ease-out; }
+  @keyframes etu-ring-in { from { opacity: 0; } to { opacity: 1; } }
+}
