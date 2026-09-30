@@ -23,7 +23,7 @@
   --etu-line-strong: #c9d3de;
   --etu-fg: #ffffff;
   --etu-muted: #dde4ec;
-  --etu-accent: #f0c24a;
+  --etu-accent: #7fe6c2;
 }
 
 .etu-radial {
@@ -64,6 +64,12 @@
 .etu-center:hover { stroke-opacity: 0.8; }
 
 .etu-slice { fill: var(--etu-slice); stroke: none; }
+/* Classic style: every wedge outlined; wedges that open another ring outlined in the accent colour. */
+.etu-style-classic .etu-slice, .etu-style-classic .etu-cell { stroke: var(--etu-line-strong); stroke-width: 1; }
+.etu-style-classic .etu-slice-group, .etu-style-classic .etu-slice-more { stroke: var(--etu-accent); stroke-width: 1.5; }
+.etu-style-classic.etu-hc .etu-slice, .etu-style-classic.etu-hc .etu-cell { stroke: var(--etu-line); stroke-width: 2; }
+.etu-style-classic.etu-hc .etu-slice-group, .etu-style-classic.etu-hc .etu-slice-more { stroke: var(--etu-accent); stroke-width: 2.5; }
+.etu-style-classic.etu-hc .etu-cell.is-active { stroke: var(--etu-fg); stroke-width: 2.5; }
 .etu-slice.is-hot { fill: var(--etu-slice-hot); }
 .etu-slice.is-locked, .etu-cell.is-locked { opacity: 0.5; cursor: not-allowed; }
 .etu-empty-ring { fill: none; stroke: var(--etu-line); stroke-width: 84; opacity: 0.6; }

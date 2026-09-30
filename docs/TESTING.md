@@ -58,9 +58,9 @@ Live preview to compare against: https://claude.ai/artifact/2RKzhyr5YUuKpYhtbDZz
 
 1. Each wedge shows a faint icon behind its label (the Thermal wedge shows a flame or snowflake when Hot or Cold). Hacked systems with their own card art show that instead. Hovering a wedge brightens its texture a little.
 2. Opening, including the very first time after a reload: wedges unfurl outward from the token, one after another.
-3. The frame: a metal rim round the wheel with a chevron and small tabs at every wedge break, and a thin rim round the centre. Gold dividers between wedges each carry a bright point gliding outward, one after another round the ring.
-4. Signal, Hacked, and Token show an outward double chevron on the frame (they open another ring).
-5. Module Settings → **Ring and pip colours** → High contrast: green frame, mint dividers (still gliding), bolder colours, solid pips with dark text. Each player picks their own.
+3. Classic style (default): every wedge outlined; Signal, Hacked, and Token (they open another ring) outlined in gold.
+4. Module Settings → **Ring style** → Mod frame: a metal rim round the wheel with a chevron and small tabs at every wedge break, gold dividers with a bright point gliding outward, and an outward double chevron over Signal, Hacked, and Token.
+5. Module Settings → **Ring and pip colours** → High contrast: mint instead of gold (outlines, badges, breadcrumb), bolder condition colours, solid pips with dark text; in Mod frame, a green frame with mint gliding dividers. Each player picks their own style and colours.
 6. Drilling into Signal: the first ring opens outward and fades while the Signal ring unfurls. Esc: the Signal ring furls into the center while the first ring settles back in.
 7. Gauge rings sweep their cells in around the arc; the gap at the bottom shows the condition's icon above "back". Temperature cells carry flames and snowflakes.
 8. Closing (Esc at the first ring, or clicking elsewhere) furls the ring into the center.

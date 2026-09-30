@@ -31,6 +31,12 @@
         "standard": "Standard",
         "high": "High contrast"
       },
+      "ringStyle": {
+        "name": "Ring style",
+        "hint": "Classic: each wedge outlined, wedges that open another ring outlined in the accent colour. Mod frame: one metal frame round the whole ring with glowing dividers, after Warframe's mod borders.",
+        "classic": "Classic",
+        "frame": "Mod frame"
+      },
       "showPips": {
         "name": "Show condition pips on tokens",
         "hint": "Small labels above each token showing its active conditions and levels."

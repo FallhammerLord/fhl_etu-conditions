@@ -4,7 +4,7 @@ Read this first in any new session. The design, the conditions, and open decisio
 
 ## What this is
 
-A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.5.1.
+A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.6.0.
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
@@ -45,7 +45,8 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 - **All writes for one actor go through the queue in `store.js`,** read and write in one step, with a time limit.
 - **Ring icons are our own SVG symbols** (`scripts/icons.js`), not Foundry files or fonts, so they match everywhere.
 - **Motion respects reduced-motion.** Animations live in CSS; `motionAllowed()` skips the furl delay and the divider glide (SMIL `<animate>`, which CSS can't switch off).
-- **Gold means nothing special.** A gold highlight on submenu wedges read as "important" to players. "Opens another ring" is an outward double chevron in the frame's colour.
+- **Ring styles:** Classic (default, the table's favourite: outlined wedges, submenu wedges outlined in the accent colour) and Mod frame (optional; frame, gliding dividers, outward double chevron for submenus). Per player via the `ringStyle` setting; the root gets `etu-style-classic` or `etu-style-frame`. Players found a gold frame highlight on submenus read as "important"; watch for the same with Classic's accent outlines.
+- **High contrast** swaps gold for mint (`--etu-accent`).
 - **Colours:** condition colours live in `PALETTES` (conditions.js), per player via the `contrast` setting. Filled gauge cells compute their fill and label colour in JS (`color.js`); `SURFACE`/`LABEL` there must match the CSS tokens, which `npm run contrast` checks.
 - **Visual modules are optional** and sit behind an adapter that fails quietly.
 

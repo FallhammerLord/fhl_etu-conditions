@@ -46,6 +46,20 @@ export function registerSettings({ onPipsChange })
       onChange: () => onPipsChange()
    });
 
+   game.settings.register(MODULE_ID, 'ringStyle', {
+      name: `${MODULE_ID}.settings.ringStyle.name`,
+      hint: `${MODULE_ID}.settings.ringStyle.hint`,
+      scope: 'client',
+      config: true,
+      type: String,
+      choices: {
+         classic: `${MODULE_ID}.settings.ringStyle.classic`,
+         frame: `${MODULE_ID}.settings.ringStyle.frame`
+      },
+      default: 'classic',
+      onChange: () => onPipsChange()
+   });
+
    game.settings.register(MODULE_ID, 'showPips', {
       name: `${MODULE_ID}.settings.showPips.name`,
       hint: `${MODULE_ID}.settings.showPips.hint`,
@@ -72,6 +86,13 @@ export function highContrast()
 {
    try { return game.settings.get(MODULE_ID, 'contrast') === 'high'; }
    catch { return false; }
+}
+
+/** @returns {string} This player's ring style: "classic" (outlined wedges) or "frame" (Warframe-style mod frame). */
+export function ringStyle()
+{
+   try { return game.settings.get(MODULE_ID, 'ringStyle') === 'frame' ? 'frame' : 'classic'; }
+   catch { return 'classic'; }
 }
 
 /** @returns {boolean} Whether this client draws condition pips on tokens. */

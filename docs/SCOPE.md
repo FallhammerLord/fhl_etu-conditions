@@ -102,8 +102,9 @@ The GM adds conditions in Module Settings: name, kind (on/off or a level range),
 - Click the token in the center, press Esc, or right-click the ring: back up one ring. At the root, the ring furls closed.
 - Click outside: the ring furls closed.
 
-**Look** (reviewed by the user and table, 2026-09-30)
-- **Mod frame,** after Warframe's mod borders: one metal plate rim around the whole wheel (the Cypher Card Sheet's plate gradient) and a thin plate rim round the centre. Wedges have no outlines of their own.
+**Look** (reviewed by the user and table, 2026-09-30). Two ring styles, per player (Module Settings → Ring style):
+- **Classic (default, the table's favourite):** every wedge outlined; wedges that open another ring outlined in the accent colour (gold; mint in high contrast).
+- **Mod frame (optional),** after Warframe's mod borders: one metal plate rim around the whole wheel (the Cypher Card Sheet's plate gradient) and a thin plate rim round the centre. Wedges have no outlines of their own.
 - **At every wedge break:** a chevron on the frame pointing in, a small tapered tab out of the frame, and one in from the centre rim.
 - **Dividers:** one gold gradient line per break, with a bright point that glides from the centre to the rim, staggered round the ring (about 12.8 s per lap).
 - **"Opens another ring":** an outward double chevron on the frame over the wedge, in the frame's own colour. Gold highlights were tried and dropped: players read them as "important".
@@ -113,7 +114,7 @@ The GM adds conditions in Module Settings: name, kind (on/off or a level range),
 
 **Contrast** (Module Settings → Ring and pip colours, per player)
 - **Standard:** the Cypher Card Sheet's dark theme colours.
-- **High contrast:** colour-blind-friendly Okabe-Ito condition colours, with Temperature's blue-to-orange scale kept apart from the other conditions; the Card Sheet's high-contrast green frame with mint edges and dividers; solid pips with dark text; brighter labels; textures kept.
+- **High contrast:** mint accent in place of gold; colour-blind-friendly Okabe-Ito condition colours, with Temperature's blue-to-orange scale kept apart from the other conditions; the Card Sheet's high-contrast green frame with mint edges and dividers; solid pips with dark text; brighter labels; textures kept.
 - Every label, value, pip, and filled gauge cell is checked at WCAG AA (4.5:1) in both palettes by `npm run contrast`. Filled cells pick light or dark text per fill.
 
 **Behavior**

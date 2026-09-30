@@ -7,7 +7,7 @@
 import { MODULE_ID } from './constants.js';
 import { CONDITIONS, conditionColor, temperatureStep } from './conditions.js';
 import { adjustLevel, clearConditions, getLevel, setHack, setLevel } from './store.js';
-import { canEdit, highContrast } from './settings.js';
+import { canEdit, highContrast, ringStyle } from './settings.js';
 import { resolveActors } from './api.js';
 import { artOf, hackOf, mountOf, unitSystems } from './items.js';
 import { iconDefs, iconId, temperatureIcon } from './icons.js';
@@ -28,8 +28,8 @@ const GAUGE_SWEEP = 270;
 /** Seconds for the divider wave to go once round the ring. */
 const SPARK_LAP = 12.8;
 
-/** Half the seam between neighbouring wedges, in degrees; the glowing dividers sit in it. */
-const WEDGE_GAP = 0.4;
+/** Half the gap between neighbouring wedges, in degrees, per ring style. The mod frame's glowing dividers sit in a thin seam. */
+const WEDGE_GAP = { classic: 1.5, frame: 0.4 };
 
 /** A right-button release this far (screen px) from the press was a canvas pan, not a click. */
 const PAN_THRESHOLD = 6;
@@ -600,6 +600,9 @@ class RadialMenu
       this.renderSeq = (this.renderSeq ?? 0) + 1;
       Object.assign(this.root.style, { left: `${x}px`, top: `${y}px` });
       this.root.classList.toggle('etu-hc', highContrast());
+      this.style = ringStyle();
+      this.root.classList.toggle('etu-style-frame', this.style === 'frame');
+      this.root.classList.toggle('etu-style-classic', this.style !== 'frame');
 
       const surface = this.root.querySelector('svg');
       surface.setAttribute('width', size);
@@ -628,7 +631,7 @@ class RadialMenu
       let frame = { dividers: [], deeper: [] };
       if (node.type === 'group') { frame = this.renderGroup(layer, node, actor, c, r0, r1); }
       else if (node.type === 'gauge') { frame = this.renderGauge(layer, node, actor, c, r0, r1); }
-      this.renderFrame(layer, c, r0, r1, frame);
+      if (this.style === 'frame') { this.renderFrame(layer, c, r0, r1, frame); }
 
       layer.append(svg('circle', { cx: c, cy: c, r: r0 - 3, class: 'etu-center', 'data-act': 'back' }));
       surface.append(layer);
@@ -656,8 +659,9 @@ class RadialMenu
       slices.forEach((s, i) =>
       {
          const mid = i * span;
-         const a0 = mid - span / 2 + WEDGE_GAP;
-         const a1 = mid + span / 2 - WEDGE_GAP;
+         const gapHalf = WEDGE_GAP[this.style] ?? WEDGE_GAP.classic;
+         const a0 = mid - span / 2 + gapHalf;
+         const a1 = mid + span / 2 - gapHalf;
          const locked = s.type === 'gauge' && !s.gauge.editable(actor);
          const cls = ['etu-slice', `etu-slice-${s.type}`, locked ? 'is-locked' : '',
             this.hot?.kind === 'slice' && this.hot.i === i ? 'is-hot' : ''].filter(Boolean).join(' ');
@@ -721,8 +725,9 @@ class RadialMenu
       const signed = levels[0] < 0;
       levels.forEach((v, i) =>
       {
-         const a0 = GAUGE_START + i * w + WEDGE_GAP;
-         const a1 = GAUGE_START + (i + 1) * w - WEDGE_GAP;
+         const gapHalf = WEDGE_GAP[this.style] ?? WEDGE_GAP.classic;
+         const a0 = GAUGE_START + i * w + gapHalf;
+         const a1 = GAUGE_START + (i + 1) * w - gapHalf;
          const mid = GAUGE_START + (i + 0.5) * w;
          const active = v === current;
          const within = signed
