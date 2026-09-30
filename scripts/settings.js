@@ -1,7 +1,6 @@
 /**
  * Module settings. Player edit rights are per condition; the GM can always edit.
- * Defaults follow docs/SCOPE.md section 11 item 5 (proposed): players set Temperature and Recoil
- * on their own units, the GM sets Target Lock, Jammed, and Hacked.
+ * Players handle their own units' conditions from the ring, so every condition defaults to player-editable.
  */
 
 import { MODULE_ID } from './constants.js';
@@ -9,10 +8,10 @@ import { MODULE_ID } from './constants.js';
 /** Condition keys with a player-edit setting, and their defaults. */
 const PLAYER_EDIT_DEFAULTS = {
    temperature: true,
-   targetLock: false,
-   jammed: false,
+   targetLock: true,
+   jammed: true,
    recoil: true,
-   hacked: false
+   hacked: true
 };
 
 /**

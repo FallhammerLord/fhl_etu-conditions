@@ -1,11 +1,10 @@
 /**
- * Tests the pure rules math and the condition store (against an in-memory actor with simulated
- * server latency). Usage: npm run rules
+ * Tests the condition store (against an in-memory actor with simulated server latency), item systems,
+ * right-click routing, and string keys. Usage: npm run rules
  */
 import assert from 'node:assert/strict';
 import { hooks, settings, warnings } from './foundry-mock.mjs';
 
-const rules = await import('../scripts/rules.js');
 const { clampLevel } = await import('../scripts/conditions.js');
 await import('../scripts/main.js');
 for (const fn of hooks.get('init') ?? []) { fn(); }
@@ -18,74 +17,7 @@ async function test(name, fn)
    catch (err) { console.error(`FAIL ${name}\n  ${err.message}`); process.exitCode = 1; }
 }
 
-// ---- Rules -------------------------------------------------------------------
-
-await test('temperature cost per Effort', () =>
-{
-   const t = rules.temperatureCostPerEffort;
-   assert.equal(t(0, 'reactor'), 0);
-   assert.equal(t(1, 'reactor'), 0);
-   assert.equal(t(-1, 'reactor'), 0);
-   assert.equal(t(2, 'reactor'), 1);
-   assert.equal(t(2, 'frame'), 0);
-   assert.equal(t(-2, 'reactor'), 1);
-   assert.equal(t(3, 'reactor'), 3);
-   assert.equal(t(3, 'frame'), 3);
-   assert.equal(t(3, 'strain'), 0);
-   assert.equal(t(-3, 'strain'), 3);
-   assert.equal(t(-3, 'frame'), 0);
-});
-
-await test('Target Lock against Jammed', () =>
-{
-   assert.equal(rules.signalSteps(0, 0), 0);
-   assert.equal(rules.signalSteps(4, 0), 4);
-   assert.equal(rules.signalSteps(5, 3), 2);
-   assert.equal(rules.signalSteps(3, 3), -3, 'equal lock is overridden by the full jam');
-   assert.equal(rules.signalSteps(2, 3), -3);
-   assert.equal(rules.signalSteps(0, 3), -3);
-   assert.equal(rules.signalSteps(4, 3), 1, 'one point past the jam flips to easing');
-});
-
-await test('signal through jam', () =>
-{
-   assert.deepEqual(rules.signalThroughJam(4, 'electromagnetic', 0), { works: true, effective: 4 });
-   assert.deepEqual(rules.signalThroughJam(4, 'electromagnetic', 4), { works: false, effective: 0 });
-   assert.deepEqual(rules.signalThroughJam(4, 'electromagnetic', 3), { works: true, effective: 1 });
-   assert.deepEqual(rules.signalThroughJam(4, 'liminal', 5), { works: true, effective: 1 });
-   assert.deepEqual(rules.signalThroughJam(4, 'etheric', 8), { works: false, effective: 0 });
-});
-
-await test('recoil stacks per shot and Recoil Control subtracts its result', () =>
-{
-   // The table's example: 6, control 3, +3, control 2, +1, control 0.
-   let r = rules.stackRecoil(0, 6);
-   assert.equal(r, 6);
-   r = rules.recoilAfterControl(r, 3);
-   assert.equal(r, 3);
-   r = rules.stackRecoil(r, 3);
-   assert.equal(r, 6);
-   r = rules.recoilAfterControl(r, 2);
-   assert.equal(r, 4);
-   r = rules.stackRecoil(r, 1);
-   assert.equal(r, 5);
-   assert.equal(rules.recoilAfterControl(r, 0), 5);
-   assert.equal(rules.recoilAfterControl(2, 9), 0, 'never below 0');
-   assert.equal(rules.stackRecoil(8, 6, 10), 10, 'capped by the condition range');
-});
-
-await test('Drain and Deep Well', () =>
-{
-   assert.equal(rules.deepWellThreshold(0), null);
-   assert.equal(rules.deepWellThreshold(1), 0.9);
-   assert.ok(Math.abs(rules.deepWellThreshold(2) - 0.8) < 1e-9);
-   assert.equal(rules.drainCost(3, 20, 20), 3, 'no Deep Well: full Drain');
-   assert.equal(rules.drainCost(3, 20, 20, 1), 2, 'above 90%: one less');
-   assert.equal(rules.drainCost(3, 18, 20, 1), 3, 'exactly 90% is not above it');
-   assert.equal(rules.drainCost(3, 17, 20, 2), 2, 'two picks widen to 80%');
-   assert.equal(rules.drainCost(1, 20, 20, 1), 0);
-   assert.equal(rules.drainCost(0, 20, 20, 1), 0, 'never negative');
-});
+// ---- Levels ------------------------------------------------------------------
 
 await test('levels clamp to each condition range', () =>
 {
@@ -242,9 +174,9 @@ function etuUnit(name)
       { id: 'hailArt', name: 'Silver Hail', type: 'artifact', flags: { cyphersystem: { tags: ['tagHP'] } } },
       { id: 'hailAtk', name: 'Silver Hail', type: 'attack', system: { basic: { type: 'heavy weapon' } }, flags: { [CS]: { linkedArtifact: 'hailArt' } } },
       { id: 'suite', name: 'Sensor Suite', type: 'equipment' },
-      { id: 'bay', name: 'Missile Bay', type: 'equipment', flags: { [MOD]: { signalRole: 'reliant', signalLevel: 5 } } },
+      { id: 'bay', name: 'Missile Bay', type: 'equipment' },
       { id: 'cloak', name: 'Cloak Field', type: 'equipment', flags: { [MOD]: { mount: 'none' } } },
-      { id: 'flare', name: 'Flare Pod', type: 'equipment', flags: { [MOD]: { mount: 'bay', drainPool: 'reactor', drainAmount: 2 } } }
+      { id: 'flare', name: 'Flare Pod', type: 'equipment', flags: { [MOD]: { mount: 'bay' } } }
    ]);
 }
 const byId = (a, id) => a.items.get(id);
@@ -272,28 +204,6 @@ await test('a Card Sheet linked attack is the same system as its artifact', () =
    assert.deepEqual(names, ['rail', 'hailArt', 'suite', 'bay', 'flare'], 'one entry per system; knife and cloak excluded');
 });
 
-await test('Recoil: set value, else weapon size on Hard Points, else none', async () =>
-{
-   const a = etuUnit('R');
-   assert.deepEqual(items.recoilInfo(byId(a, 'rail')), { rating: 4, source: 'size' });
-   assert.deepEqual(items.recoilInfo(byId(a, 'hailArt')), { rating: 6, source: 'size' }, 'artifact takes the linked attack\'s size');
-   assert.deepEqual(items.recoilInfo(byId(a, 'knife')), { rating: 0, source: 'none' }, 'not a Hard Point');
-   byId(a, 'rail').flags[MOD] = { recoil: 8 };
-   assert.deepEqual(items.recoilInfo(byId(a, 'rail')), { rating: 8, source: 'flag' }, 'Capital override');
-   assert.deepEqual(items.recoilInfo(byId(a, 'rail'), { useFlag: false }), { rating: 4, source: 'size' });
-   byId(a, 'rail').flags[MOD] = { recoil: null };
-   assert.equal(items.recoilInfo(byId(a, 'rail')).rating, 4, 'blank field means auto');
-});
-
-await test('Signal and Drain read from the system', () =>
-{
-   const a = etuUnit('S');
-   assert.deepEqual(items.signalOf(byId(a, 'bay')), { role: 'reliant', type: 'electromagnetic', level: 5 });
-   assert.deepEqual(items.signalOf(byId(a, 'rail')), { role: 'none', type: 'electromagnetic', level: null });
-   assert.deepEqual(items.drainOf(byId(a, 'flare')), { pool: 'reactor', amount: 2 });
-   assert.equal(items.drainOf(byId(a, 'rail')), null);
-});
-
 await test('hacking either half of a linked pair hacks both, counted once', async () =>
 {
    const a = etuUnit('H');
@@ -316,11 +226,10 @@ await test('item sheet section renders per type and defers linked items to the a
    const a = etuUnit('I');
    const rail = etuFieldsHtml(byId(a, 'rail'), true);
    assert.ok(rail.includes('name="flags.fhl-etu-conditions.mount"'));
-   assert.ok(rail.includes('name="flags.fhl-etu-conditions.recoil"'));
-   assert.ok(rail.includes('sheet.recoilAuto'), 'shows the automatic Recoil as the placeholder');
-   assert.ok(!rail.includes('signalType'), 'signal type appears only once a role is chosen');
+   assert.ok(rail.includes('sheet.autoFrom'), 'the Auto option names what was detected');
+   assert.equal((rail.match(/<select/g) ?? []).length, 1, 'Mount is the only setting');
    const bay = etuFieldsHtml(byId(a, 'bay'), false);
-   assert.ok(bay.includes('signalType') && bay.includes(' disabled'), 'read-only sheet disables inputs');
+   assert.ok(bay.includes(' disabled'), 'read-only sheet disables the input');
    const linked = etuFieldsHtml(byId(a, 'hailAtk'), true);
    assert.ok(linked.includes('sheet.linkedNote') && !linked.includes('<select'), 'linked attack shows a note only');
    assert.equal(etuFieldsHtml(new MockItem({ name: 'x', type: 'skill' }), true), '', 'skills get no section');
@@ -343,11 +252,12 @@ await test('player permissions follow the settings', async () =>
    const a = mockActor('G');
    game.user.isGM = false;
    warnings.length = 0;
-   assert.equal(await store.setLevel(a, 'temperature', 1), 1, 'Temperature allowed by default');
-   assert.equal(await store.setLevel(a, 'targetLock', 1), null, 'Target Lock is GM-only by default');
+   assert.equal(await store.setLevel(a, 'temperature', 1), 1, 'players may edit their own units by default');
+   assert.equal(await store.setLevel(a, 'targetLock', 1), 1);
+   settings.set(`${MOD}.playerEdit.targetLock`, false);
+   assert.equal(await store.setLevel(a, 'targetLock', 2), null, 'the GM can make a condition GM-only');
    assert.equal(warnings.length, 1);
    settings.set(`${MOD}.playerEdit.targetLock`, true);
-   assert.equal(await store.setLevel(a, 'targetLock', 1), 1);
    a.isOwner = false;
    assert.equal(await store.setLevel(a, 'temperature', 2), null, 'non-owners are refused');
    game.user.isGM = true;

@@ -14,7 +14,6 @@
 import { CONDITIONS, TEMPERATURE_STEPS } from './conditions.js';
 import { adjustLevel, clearConditions, getConditions, setHack, setLevel } from './store.js';
 import { controlledTokens, documentFromUuid } from './compat.js';
-import * as rules from './rules.js';
 
 /**
  * @param {*} target - What the caller passed.
@@ -36,7 +35,6 @@ export function resolveActors(target)
 export const api = {
    CONDITIONS,
    TEMPERATURE_STEPS,
-   rules,
 
    /**
     * @param {*} [target] - Token, TokenDocument, Actor, or UUID; defaults to the first selected token.

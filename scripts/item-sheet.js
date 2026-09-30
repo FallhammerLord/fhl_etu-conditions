@@ -1,102 +1,44 @@
 /**
- * The "ETU system" section on Cypher System item sheets (Settings tab): mount, Recoil, Signal, Drain.
- * Inputs are named by flag path, so the system's own form submit saves them; nothing here writes.
+ * The "ETU system" section on Cypher System item sheets (Settings tab): the item's mount.
+ * The input is named by flag path, so the system's own form submit saves it; nothing here writes.
  * Same approach as the Cypher Card Sheet's item fields. Baseline: cyphersystem v3.5.2 (AppV1 sheet).
  */
 
 import { MODULE_ID } from './constants.js';
-import { ETU_ITEM_TYPES, hostOf, mountInfo, recoilInfo } from './items.js';
+import { MOUNTABLE_TYPES, hostOf, mountInfo } from './items.js';
 
 const t = (key) => game.i18n.localize(`${MODULE_ID}.${key}`);
 const tf = (key, data) => game.i18n.format(`${MODULE_ID}.${key}`, data);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const flagPath = (key) => `flags.${MODULE_ID}.${key}`;
-
-/**
- * @param {string} key - Flag key.
- * @param {Array<[string, string]>} options - [value, label] pairs.
- * @param {*} current - Stored value.
- * @param {string} off - " disabled" or "".
- * @returns {string} HTML.
- */
-function select(key, options, current, off)
-{
-   const opts = options.map(([v, label]) => `<option value="${esc(v)}"${String(current ?? '') === v ? ' selected' : ''}>${esc(label)}</option>`);
-   return `<select class="auto-margin settings-input" name="${flagPath(key)}"${off}>${opts.join('')}</select>`;
-}
-
-function number(key, value, placeholder, off)
-{
-   const v = value === null || value === undefined ? '' : value;
-   return `<input class="auto-margin settings-input" type="number" data-dtype="Number" min="0" name="${flagPath(key)}" value="${esc(v)}" placeholder="${esc(placeholder)}"${off}>`;
-}
-
-const row = (label, input) =>
-   `<li class="item flexrow item-settings"><div class="settings-list">${esc(label)}</div><div class="item-quantity">${input}</div></li>`;
-
-const note = (text) => `<li class="item flexrow"><div class="settings-list etu-sheet-note">${esc(text)}</div></li>`;
 
 /**
  * @param {Item} item - The item whose sheet is rendering.
  * @param {boolean} editable - Whether the sheet is editable.
- * @returns {string} Section HTML, or "" for item types without ETU values.
+ * @returns {string} Section HTML, or "" for item types that can't be systems.
  */
 export function etuFieldsHtml(item, editable)
 {
-   const rows = ETU_ITEM_TYPES[item.type];
-   if (!rows) { return ''; }
-   const flags = item.flags?.[MODULE_ID] ?? {};
-   const off = editable ? '' : ' disabled';
+   if (!MOUNTABLE_TYPES.has(item.type)) { return ''; }
    const header = `<li class="item flexrow item-header"><div class="item-name">${esc(t('sheet.title'))}</div></li>`;
    const wrap = (body) => `<div class="flexrow etu-sheet-fields"><ol class="items-list">${header}${body}</ol></div>`;
 
-   // Half of a linked pair: the artifact carries the values for both.
+   // Half of a linked pair: the artifact carries the mount and Hack rating for both.
    const host = item.parent ? hostOf(item) : item;
-   if (host !== item) { return wrap(note(tf('sheet.linkedNote', { host: host.name }))); }
+   if (host !== item)
+   {
+      return wrap(`<li class="item flexrow"><div class="settings-list etu-sheet-note">${esc(tf('sheet.linkedNote', { host: host.name }))}</div></li>`);
+   }
 
-   const out = [];
-   if (rows.mount)
-   {
-      const info = item.parent ? mountInfo(item, { useFlag: false }) : { mount: null, source: 'none' };
-      const detected = info.mount
-         ? tf('sheet.autoFrom', { value: t(`mount.${info.mount}`), source: t(`source.${info.source}`) })
-         : t('sheet.autoNone');
-      out.push(row(t('sheet.mount'), select('mount', [
-         ['', detected],
-         ['hardpoint', t('mount.hardpoint')],
-         ['sensor', t('mount.sensor')],
-         ['bay', t('mount.bay')],
-         ['none', t('mount.none')]
-      ], flags.mount, off)));
-   }
-   if (rows.recoil)
-   {
-      // Show what "blank" means for this weapon right now.
-      const auto = item.parent ? recoilInfo(item, { useFlag: false }) : { rating: 0, source: 'none' };
-      const placeholder = auto.rating ? tf('sheet.recoilAuto', { rating: auto.rating }) : t('sheet.recoilNone');
-      out.push(row(t('sheet.recoil'), number('recoil', flags.recoil, placeholder, off)));
-   }
-   if (rows.signal)
-   {
-      out.push(row(t('sheet.signalRole'), select('signalRole', [
-         ['', t('role.none')], ['source', t('role.source')], ['reliant', t('role.reliant')]
-      ], flags.signalRole, off)));
-      if (flags.signalRole === 'source' || flags.signalRole === 'reliant')
-      {
-         out.push(row(t('sheet.signalType'), select('signalType', [
-            ['', t('signal.electromagnetic')], ['liminal', t('signal.liminal')], ['etheric', t('signal.etheric')]
-         ], flags.signalType, off)));
-         out.push(row(t('sheet.signalLevel'), number('signalLevel', flags.signalLevel, t('sheet.signalLevelHint'), off)));
-      }
-   }
-   if (rows.drain)
-   {
-      out.push(row(t('sheet.drainPool'), select('drainPool', [
-         ['', t('pool.none')], ['frame', t('pool.frame')], ['reactor', t('pool.reactor')], ['strain', t('pool.strain')]
-      ], flags.drainPool, off)));
-      if (flags.drainPool) { out.push(row(t('sheet.drainAmount'), number('drainAmount', flags.drainAmount, '0', off))); }
-   }
-   return wrap(out.join(''));
+   const info = item.parent ? mountInfo(item, { useFlag: false }) : { mount: null, source: 'none' };
+   const auto = info.mount
+      ? tf('sheet.autoFrom', { value: t(`mount.${info.mount}`), source: t(`source.${info.source}`) })
+      : t('sheet.autoNone');
+   const current = String(item.flags?.[MODULE_ID]?.mount ?? '');
+   const options = [['', auto], ['hardpoint', t('mount.hardpoint')], ['sensor', t('mount.sensor')], ['bay', t('mount.bay')], ['none', t('mount.none')]]
+      .map(([v, label]) => `<option value="${v}"${current === v ? ' selected' : ''}>${esc(label)}</option>`)
+      .join('');
+   const select = `<select class="auto-margin settings-input" name="flags.${MODULE_ID}.mount"${editable ? '' : ' disabled'}>${options}</select>`;
+   return wrap(`<li class="item flexrow item-settings"><div class="settings-list">${esc(t('sheet.mount'))}</div><div class="item-quantity">${select}</div></li>`);
 }
 
 /**
