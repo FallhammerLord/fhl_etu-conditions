@@ -125,6 +125,26 @@ export function hackOf(item)
 }
 
 /**
+ * @param {string} img - An item image path.
+ * @returns {boolean} Whether it's a placeholder: Foundry's item bag or the Cypher System's type icon.
+ */
+function isDefaultArt(img)
+{
+   return !img || img === 'icons/svg/item-bag.svg' || img.startsWith('systems/cyphersystem/icons/items/');
+}
+
+/**
+ * @param {Item} item - Any item on an actor.
+ * @returns {string|null} The system's own card art (host first, then linked items), or null if it only
+ *   has placeholder images.
+ */
+export function artOf(item)
+{
+   for (const i of systemGroup(item)) { if (!isDefaultArt(i.img)) { return i.img; } }
+   return null;
+}
+
+/**
  * @param {Actor} actor - The unit.
  * @returns {Item[]} One host per mounted or hacked system, in sheet order.
  */

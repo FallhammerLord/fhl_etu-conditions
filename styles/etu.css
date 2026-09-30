@@ -94,6 +94,12 @@
 .etu-wedge:hover .etu-slice-icon { opacity: 0.2; }
 .etu-slice-group ~ .etu-slice-icon, .etu-slice-more ~ .etu-slice-icon { color: var(--etu-accent); }
 .etu-gap-icon { opacity: 0.4; }
+/* Card art on Hacked systems: a little stronger than line icons, since art is already muted by colour. */
+.etu-slice-art { opacity: 0.3; pointer-events: none; transition: opacity 0.12s; }
+.etu-wedge:hover .etu-slice-art { opacity: 0.45; }
+/* Flames and snowflakes on Temperature cells; the active cell's icon sits on its filled colour. */
+.etu-cell-icon { color: var(--etu-fg); opacity: 0.16; pointer-events: none; }
+.etu-cell-icon.is-active { color: var(--etu-bg); opacity: 0.3; }
 
 /* Furl and unfurl. Every wedge turns about the ring's center (--cx/--cy, set on the layer). */
 .etu-wedge, .etu-ring-backdrop { transform-box: view-box; transform-origin: var(--cx) var(--cy); }

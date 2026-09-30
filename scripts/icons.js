@@ -4,6 +4,10 @@
  * and in the offline preview.
  */
 
+const FLAME = '<path d="M12 21.2c-3.9 0-6.6-2.6-6.6-6.3 0-3.3 2.3-5.4 3.7-8 .5 1.7 1.6 2.8 2.7 3.3.2-3.1 1.2-5.6 3.4-7.1-.2 3 1.2 4.8 2.3 6.6 1 1.6 1.5 3.2 1.5 5.2 0 3.7-2.7 6.3-7 6.3z"/>';
+const FLAME_CORE = '<path d="M12 21.2c-1.8 0-3-1.2-3-2.9 0-1.6 1.2-2.6 2-3.9.4 1 1 1.5 1.6 1.8.3-1 .7-1.8 1.4-2.4 0 1.5.9 2.5.9 4 0 2.1-1.2 3.4-2.9 3.4z"/>';
+const SNOW = '<path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/>';
+
 const ICONS = {
    thermal: '<path d="M10 4.5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"/><path d="M12 9v7.5"/>',
    signal: '<path d="M12 21v-9"/><circle cx="12" cy="10" r="1.6"/><path d="M8.6 13.4a4.8 4.8 0 0 1 0-6.8M15.4 6.6a4.8 4.8 0 0 1 0 6.8M5.8 16.2a8.8 8.8 0 0 1 0-12.4M18.2 3.8a8.8 8.8 0 0 1 0 12.4"/>',
@@ -22,8 +26,27 @@ const ICONS = {
    combat: '<path d="M4 4l10.5 10.5M20 4L9.5 14.5"/><path d="M6.5 14.5l3 3M17.5 14.5l-3 3M4.5 19.5l3-3M19.5 19.5l-3-3"/>',
    hide: '<path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20L20 4"/>',
    reveal: '<path d="M2 12s3.8-6 10-6 10 6 10 6-3.8 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>',
-   hud: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>'
+   hud: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+
+   // Temperature, three intensities each: the shape grows more complex as it gets hotter or colder.
+   flame1: FLAME,
+   flame2: FLAME + FLAME_CORE,
+   flame3: FLAME + FLAME_CORE + '<path d="M3.5 7.5l1.6 1.2M20.5 7l-1.6 1.2M2.8 13h1.8M19.4 13h1.8M6 3.5l.9 1.6"/>',
+   snow1: SNOW,
+   snow2: SNOW + '<path d="M9.6 4.6L12 6.6l2.4-2M9.6 19.4L12 17.4l2.4 2"/>',
+   snow3: SNOW + '<path d="M9.6 4.6L12 6.6l2.4-2M9.6 19.4L12 17.4l2.4 2M4.5 10.6l2.9.9.7-2.9M19.5 10.6l-2.9.9-.7-2.9M4.5 13.4l2.9-.9.7 2.9M19.5 13.4l-2.9-.9-.7 2.9"/>'
 };
+
+/**
+ * @param {number} value - Temperature, -3 to 3.
+ * @returns {string} Flame for hot, snowflake for cold (more elaborate the further from Normal), else thermometer.
+ */
+export function temperatureIcon(value)
+{
+   if (value > 0) { return `flame${Math.min(3, value)}`; }
+   if (value < 0) { return `snow${Math.min(3, -value)}`; }
+   return 'thermal';
+}
 
 /** @returns {string[]} Every icon name. */
 export function iconNames()

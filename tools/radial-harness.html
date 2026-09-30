@@ -56,10 +56,10 @@ const actor = {
 // A realistic unit: Cypher tags, a Card Sheet linked pair (artifact + attack), and gear that is not a system.
 actor.items = [
    new Item(actor, 'Hard Point', 'tag', {}, 'tagHP'),
-   new Item(actor, 'Rail Cannon', 'attack', { cyphersystem: { tags: ['tagHP'] } }, 'rail', { basic: { type: 'medium weapon' } }),
+   Object.assign(new Item(actor, 'Rail Cannon', 'attack', { cyphersystem: { tags: ['tagHP'] } }, 'rail', { basic: { type: 'medium weapon' } }), { img: 'fixtures/rail-art.svg' }),
    new Item(actor, 'Silver Hail', 'artifact', { cyphersystem: { tags: ['tagHP'] } }, 'hailArt'),
    new Item(actor, 'Silver Hail', 'attack', { 'cypher-card-sheet': { linkedArtifact: 'hailArt' } }, 'hailAtk', { basic: { type: 'heavy weapon' } }),
-   new Item(actor, 'Missile Bay', 'equipment', { [MOD]: { hack: 3 } }),
+   Object.assign(new Item(actor, 'Missile Bay', 'equipment', { [MOD]: { hack: 3 } }), { img: 'systems/cyphersystem/icons/items/equipment.svg' }),
    new Item(actor, 'Long-Range Sensor Array', 'equipment'),
    new Item(actor, 'Combat Knife', 'attack', {}, 'knife', { basic: { type: 'light weapon' } }),
    new Item(actor, 'Field Rations', 'equipment'),

@@ -9,8 +9,8 @@ import { CONDITIONS, temperatureStep } from './conditions.js';
 import { adjustLevel, clearConditions, getLevel, setHack, setLevel } from './store.js';
 import { canEdit } from './settings.js';
 import { resolveActors } from './api.js';
-import { hackOf, mountOf, unitSystems } from './items.js';
-import { iconDefs, iconId } from './icons.js';
+import { artOf, hackOf, mountOf, unitSystems } from './items.js';
+import { iconDefs, iconId, temperatureIcon } from './icons.js';
 import {
    closeCoreHud, controlToken, controlledTokens, openCoreHud, tokenScreenGeometry,
    toggleCombat, toggleHidden, toggleTarget
@@ -132,6 +132,8 @@ function conditionGauge(key)
       set: (actors, v) => Promise.all(actors.map((a) => setLevel(a, key, v))),
       nudge: (actors, d) => Promise.all(actors.map((a) => adjustLevel(a, key, d))),
       cell: (v) => (key === 'temperature' ? temperatureStep(v).short : String(v)),
+      // Temperature cells carry a flame or snowflake that grows with the distance from Normal.
+      cellIcon: key === 'temperature' ? (v) => (v ? temperatureIcon(v) : null) : null,
       color: (v) => def.pipColor(v),
       value: (v) => (key === 'temperature'
          ? `${t(`temperature.${temperatureStep(v).key}`)} (${v > 0 ? '+' : ''}${v})`
@@ -311,7 +313,7 @@ class RadialMenu
          label: token.name,
          type: 'group',
          children: [
-            { ...g('temperature'), label: t('menu.thermal') },
+            { ...g('temperature'), label: t('menu.thermal'), icon: temperatureIcon(getLevel(actor, 'temperature')) },
             {
                key: 'signal', label: t('menu.signal'), type: 'group', icon: 'signal',
                badge: lock || jam ? `L${lock} J${jam}` : '',
@@ -327,7 +329,7 @@ class RadialMenu
                   const mount = mountOf(item);
                   return {
                      key: item.id, label: item.name, type: 'gauge', gauge: hackGauge(item),
-                     tag: mount ? t(`mount.short.${mount}`) : '', icon: mount ?? 'system'
+                     tag: mount ? t(`mount.short.${mount}`) : '', icon: mount ?? 'system', art: artOf(item)
                   };
                })
             },
@@ -468,12 +470,34 @@ class RadialMenu
       if (this.isOpen && (!actor || actor === this.token.actor || actor.uuid === this.token.actor?.uuid)) { this.render(); }
    }
 
-   /** Called on pan, zoom, and token movement. */
+   /**
+    * Called on pan, zoom, and token refresh. Moves the ring; rebuilds it only if its size must change.
+    * Rebuilding here would cut short an animation, e.g. the first unfurl, which the token's own
+    * refresh (from being selected as the ring opens) arrives in the middle of.
+    */
    reposition()
    {
-      if (!this.isOpen) { return; }
+      if (!this.isOpen || !this.root) { return; }
       if (this.token.destroyed || !this.token.actor) { this.close(); return; }
-      this.render();
+      const box = this.layout();
+      if (box.r0 !== this.drawnR0) { this.render(); return; }
+      Object.assign(this.root.style, { left: `${box.x}px`, top: `${box.y}px` });
+   }
+
+   /**
+    * @returns {{ x: number, y: number, r0: number, r1: number, size: number, c: number }} Where the ring
+    *   goes on screen (kept fully visible) and its inner/outer radii, from the token's current size.
+    */
+   layout()
+   {
+      const geo = tokenScreenGeometry(this.token);
+      const r0 = Math.min(MAX_INNER, Math.max(MIN_INNER, Math.round(geo.radius + 8)));
+      const r1 = r0 + RING_WIDTH;
+      const size = (r1 + 22) * 2;
+      const margin = r1 + 12;
+      const x = Math.min(window.innerWidth - margin, Math.max(margin, geo.x));
+      const y = Math.min(window.innerHeight - margin, Math.max(margin, geo.y));
+      return { x, y, r0, r1, size, c: size / 2 };
    }
 
    // ---- Rendering ----------------------------------------------------------------------------
@@ -544,16 +568,9 @@ class RadialMenu
    {
       if (!this.root || !this.token) { return; }
       const actor = this.token.actor;
-      const geo = tokenScreenGeometry(this.token);
-      const r0 = Math.min(MAX_INNER, Math.max(MIN_INNER, geo.radius + 8));
-      const r1 = r0 + RING_WIDTH;
-      const size = (r1 + 22) * 2;
-      const c = size / 2;
-
-      // Keep the whole ring on screen.
-      const margin = r1 + 12;
-      const x = Math.min(window.innerWidth - margin, Math.max(margin, geo.x));
-      const y = Math.min(window.innerHeight - margin, Math.max(margin, geo.y));
+      const { x, y, r0, r1, size, c } = this.layout();
+      this.drawnR0 = r0;
+      this.renderSeq = (this.renderSeq ?? 0) + 1;
       Object.assign(this.root.style, { left: `${x}px`, top: `${y}px` });
 
       const surface = this.root.querySelector('svg');
@@ -619,11 +636,25 @@ class RadialMenu
          wedge.append(svg('path', { d: n === 1 ? sector(c, c, r0, r1, 0.01, 359.99) : sector(c, c, r0, r1, a0, a1), class: cls, 'data-act': 'slice', 'data-i': i }));
 
          const [lx, ly] = polar(c, c, (r0 + r1) / 2, mid);
-         // Faint icon behind the label, like a stamped texture.
+         // Faint texture behind the label: the system's own card art if it has some, else a line icon.
          // As large as the ring's width allows, but no wider than the wedge's arc at mid-radius.
          const arc = Math.PI * (r0 + r1) * (span / 360);
          const iconSize = Math.min(RING_WIDTH * 0.78, arc * 0.85);
-         wedge.append(svg('use', { href: `#${iconId(s.icon)}`, x: lx - iconSize / 2, y: ly - iconSize / 2, width: iconSize, height: iconSize, class: 'etu-slice-icon' }));
+         if (s.art)
+         {
+            const clipId = `etu-clip-${this.renderSeq}-${i}`;
+            const clip = svg('clipPath', { id: clipId });
+            clip.append(svg('circle', { cx: lx, cy: ly, r: iconSize / 2 }));
+            wedge.append(clip);
+            wedge.append(svg('image', {
+               href: s.art, x: lx - iconSize / 2, y: ly - iconSize / 2, width: iconSize, height: iconSize,
+               preserveAspectRatio: 'xMidYMid slice', 'clip-path': `url(#${clipId})`, class: 'etu-slice-art'
+            }));
+         }
+         else
+         {
+            wedge.append(svg('use', { href: `#${iconId(s.icon)}`, x: lx - iconSize / 2, y: ly - iconSize / 2, width: iconSize, height: iconSize, class: 'etu-slice-icon' }));
+         }
          const lines = labelLines(s.label);
          const level = s.type === 'gauge' ? s.gauge.get(actor) : null;
          let value = s.type === 'gauge' ? (level ? s.gauge.cell(level) : '') : s.badge ?? '';
@@ -676,6 +707,16 @@ class RadialMenu
          if (active || within) { attrs.style = `fill: ${gauge.color(v)}`; }
          wedge.append(svg('path', attrs));
          const [lx, ly] = polar(c, c, (r0 + 8 + r1) / 2, mid);
+         const cellIcon = gauge.cellIcon?.(v);
+         if (cellIcon)
+         {
+            const arc = Math.PI * (r0 + 8 + r1) * (w / 360);
+            const size = Math.min((r1 - r0 - 8) * 0.8, arc * 0.9);
+            wedge.append(svg('use', {
+               href: `#${iconId(cellIcon)}`, x: lx - size / 2, y: ly - size / 2, width: size, height: size,
+               class: `etu-cell-icon${active ? ' is-active' : ''}`
+            }));
+         }
          wedge.append(svg('text', { x: lx, y: ly + 4, class: `etu-cell-label${active ? ' is-active' : ''}` }, gauge.cell(v)));
       });
       // The gap at the bottom holds the condition's icon and the way back.

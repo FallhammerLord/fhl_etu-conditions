@@ -41,6 +41,9 @@ const live = (sel) => `.etu-layer ${sel}`;
 
 await page.goto(`${base}/tools/radial-harness.html`);
 await page.waitForFunction(() => window.ready === true);
+// Foundry refreshes the token just after the ring opens (it gets selected). That must not cut the unfurl short.
+await page.evaluate(() => window.radialMenu.reposition());
+check(await page.evaluate(() => !!document.querySelector('.etu-layer.etu-enter-open')), 'a token refresh during the first unfurl keeps the animation');
 await page.waitForTimeout(90);
 await page.screenshot({ path: new URL('radial-unfurl.png', out).pathname });
 await wait();
@@ -82,6 +85,20 @@ check(await page.evaluate(() => window.store.getHacked(window.actor).map((h) => 
    'Silver Hail hacked once, on the artifact');
 await page.keyboard.press('Escape');
 await wait();
+
+// Temperature gauge: flames and snowflakes by intensity.
+await page.keyboard.press('Escape');
+await wait();
+await page.keyboard.press('1');
+await wait();
+await page.screenshot({ path: new URL('radial-temperature.png', out).pathname });
+check(await page.locator(live('.etu-cell-icon')).count() === 6, 'six temperature cells carry a flame or snowflake');
+await page.keyboard.press('Escape');
+await wait();
+await page.keyboard.press('4');
+await wait();
+check(await page.locator(live('.etu-slice-art')).count() === 1, 'only the system with real card art shows it');
+await page.screenshot({ path: new URL('radial-hacked-art.png', out).pathname });
 
 // Temperature via root wheel: Hot (2) -> Overheating (3).
 await page.keyboard.press('Escape');
