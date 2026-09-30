@@ -8,7 +8,11 @@ A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a 
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
-Status: milestones 1–3 written. Pips and the macro API are verified in Foundry by the user. The radial menu (milestone 3) passes the offline Chromium preview but is not yet tested in Foundry. Next: milestone 4, roll dialog pre-fill.
+Status: milestones 1–3 written (v0.2.4). Next: milestone 4, roll dialog pre-fill.
+
+Verified in Foundry by the user: pips on PC and unlinked NPC tokens; macro API; radial menu opens on right-click, all rings click through; Shift + right-click opens Foundry's HUD; right-drag panning still works.
+
+Known issue: the Hacked ring is crowded (every attack/equipment/armor/artifact is listed; long names wrap). Planned fix: item tags so only Hard Points, Sensors, and Bays appear.
 
 ## Working with the user
 
