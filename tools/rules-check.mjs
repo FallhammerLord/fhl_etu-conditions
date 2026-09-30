@@ -247,9 +247,15 @@ await test('right-click opens the menu; Shift or a refusal falls through to Foun
    {
       const Token = CONFIG.Token.objectClass;
       const a = Object.assign(new Token(), { menuOk: true });
-      a._onClickRight({ shiftKey: false });
+      let stopped = 0;
+      a._onClickRight({ shiftKey: false, buttons: 2, stopPropagation: () => stopped++ });
       assert.equal(opened.length, 1);
       assert.equal(a.coreRightClick, undefined, 'menu handled it; core HUD not called');
+      assert.equal(stopped, 1, 'a handled right-click stops at the token, like core, so the canvas does not start panning');
+      a._onClickRight({ shiftKey: false, buttons: 3, stopPropagation: () => {} });
+      assert.equal(opened.length, 1, 'right-click during a left drag goes to Foundry');
+      assert.equal(a.coreRightClick, 1);
+      a.coreRightClick = undefined;
       a._onClickRight({ shiftKey: true });
       assert.equal(opened.length, 1, 'Shift skips the menu');
       assert.equal(a.coreRightClick, 1, 'Shift reaches the core HUD');

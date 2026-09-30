@@ -31,6 +31,7 @@ globalThis.game = {
 class MockToken
 {
    _onClickRight() { this.coreRightClick = (this.coreRightClick ?? 0) + 1; }
+   _propagateRightClick() { return false; }
 }
 globalThis.CONFIG = { statusEffects: [], Token: { objectClass: MockToken } };
 globalThis.CONST = { ACTIVE_EFFECT_SHOW_ICON: { NEVER: 0, CONDITIONAL: 1, ALWAYS: 2 } };

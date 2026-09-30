@@ -103,7 +103,12 @@ export function installTokenRightClick(handler)
       _onClickRight(event)
       {
          const shift = event?.shiftKey ?? game.keyboard?.isModifierActive?.('Shift');
-         if (shift || !handler(this, event)) { return super._onClickRight(event); }
+         // Right-click during a left-button drag edits the drag's waypoints: leave that to Foundry.
+         const dragging = ((event?.buttons ?? 0) & 1) === 1;
+         if (shift || dragging || !handler(this, event)) { return super._onClickRight(event); }
+         // Core stops the click here unless the placeable propagates right-clicks. Skipping this lets the
+         // press reach the canvas, which starts a right-drag pan that never ends.
+         if (!this._propagateRightClick?.(event)) { event?.stopPropagation?.(); }
       }
    }
    Object.defineProperty(EtuToken, 'name', { value: `Etu${Base.name}` });
