@@ -67,6 +67,14 @@ Live preview to compare against: https://claude.ai/artifact/2RKzhyr5YUuKpYhtbDZz
 9. Clicking quickly during an animation still lands on the new ring.
 10. With your OS set to reduce motion, the ring appears and changes instantly and the dividers don't glide.
 
+## Hacked on Cypher Card Sheet cards
+
+With the Cypher Card Sheet active on a unit:
+1. Hack a system from the ring (Hacked → a system → a level). Its card on the sheet gets a striped tint, a coloured outline, and a "HACKED n" badge at top centre. Hovering the badge explains the Reactor test.
+2. A linked pair (e.g. Silver Hail artifact + attack) shows the badge on both cards.
+3. Set the rating back to 0: the overlay disappears. Unhacked cards never show it.
+4. High contrast (Module Settings) changes the overlay's colour with everything else.
+
 ## Which items are systems
 
 Open a weapon, gear, armor, or artifact item on a unit. Its **Settings** tab has an **ETU system** section with one setting, **Mount**.

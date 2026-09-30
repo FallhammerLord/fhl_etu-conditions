@@ -92,6 +92,10 @@
       "hacked": "Reactor test against {level} before using {name}",
       "hackedOff": "{name} is not compromised"
     },
+    "card": {
+      "hacked": "HACKED {level}",
+      "hackedNote": "Hacked (rating {level}): Reactor test against {level} before using it"
+    },
     "mount": {
       "hardpoint": "Hard Point",
       "sensor": "Sensor",

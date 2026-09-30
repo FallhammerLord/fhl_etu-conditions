@@ -4,7 +4,7 @@ Read this first in any new session. The design, the conditions, and open decisio
 
 ## What this is
 
-A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.6.0.
+A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.7.0.
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
@@ -75,6 +75,7 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 | `scripts/conditions.js` | condition registry, temperature scale, status effect registration |
 | `scripts/store.js` | read/write levels and hack ratings, per-actor write queue with time limit, permissions |
 | `scripts/api.js` | public macro API (`game.modules.get(id).api`), incl. `diagnose()` |
+| `scripts/card-overlay.js` | Hacked overlay on Cypher Card Sheet item cards (`renderCypherCardSheet` hook) |
 | `scripts/items.js` | which items are systems: mount, Hack host, Cypher Card Sheet links |
 | `scripts/item-sheet.js` | "ETU system" Mount setting in the Cypher item sheet's Settings tab |
 | `scripts/pips.js` | condition pips drawn above tokens (min 20 screen px tall at any zoom) |

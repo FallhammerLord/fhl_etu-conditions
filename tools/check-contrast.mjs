@@ -45,7 +45,9 @@ for (const suite of suites)
       ['muted text on wedges', t.muted, t.slice],
       ['badges on wedges', t.accent, t.slice],
       ['breadcrumb', t.accent, t.bg],
-      ['readout note', t.muted, t.bg]
+      ['readout note', t.muted, t.bg],
+      // Card Sheet overlay: the HACKED badge picks light or dark text on the Hacked colour.
+      ['Hacked card badge', readableOn(p.hacked, LABEL[suite.key]), p.hacked]
    ];
    for (const [name, color] of conditionColors)
    {

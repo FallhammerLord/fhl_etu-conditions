@@ -12,6 +12,7 @@ import { radialMenu } from './radial.js';
 import { activeTokens, ensureStylesheet, installTokenRightClick, onReconnect } from './compat.js';
 import { resetQueues } from './store.js';
 import { onRenderItemSheet } from './item-sheet.js';
+import { onRenderCardSheet } from './card-overlay.js';
 
 Hooks.once('init', () =>
 {
@@ -33,6 +34,8 @@ Hooks.once('ready', () =>
    });
 });
 Hooks.on('renderCypherItemSheet', onRenderItemSheet);
+// Cypher Card Sheet (optional module): Hacked overlay on item cards.
+Hooks.on('renderCypherCardSheet', onRenderCardSheet);
 
 Hooks.on('drawToken', (token) => drawPips(token));
 Hooks.on('refreshToken', (token) =>

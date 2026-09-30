@@ -11,6 +11,15 @@
 </head>
 <body>
 <div class="fake-token" id="tok"></div>
+<!-- A stand-in for the Cypher Card Sheet's cards (its real CSS isn't available offline). -->
+<div id="cards" style="position:absolute; left:20px; bottom:20px; display:flex; gap:10px;"></div>
+<style>
+  .ccs-card { position: relative; width: 148px; height: 114px; overflow: hidden; border-radius: 6px; border-top: 3px solid #c7d0da; background: #151b25; }
+  .ccs-card-body { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; font: 600 12px sans-serif; text-align: center; padding-bottom: 8px; }
+  .ccs-card-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ccs-card-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,11,16,.94), rgba(8,11,16,.08) 72%); }
+  .ccs-card-name { position: relative; }
+</style>
 <script type="module">
 // Minimal browser-side Foundry mock for rendering the real radial menu (tools/radial-preview.mjs).
 const MOD = 'fhl-etu-conditions';
@@ -90,6 +99,14 @@ window.radialMenu = radialMenu;
 window.store = store;
 window.actor = actor;
 window.token = token;
+// Mock Card Sheet cards, one per item, for the Hacked overlay.
+const cardsEl = document.getElementById('cards');
+for (const item of actor.items.filter((i) => i.type !== 'tag'))
+{
+   const art = item.img && !item.img.startsWith('systems/') ? item.img : 'fixtures/rail-art.svg';
+   cardsEl.insertAdjacentHTML('beforeend', `<article class="ccs-card" data-item-id="${item.id}"><button class="ccs-card-body"><img class="ccs-card-img" src="${art}" alt=""><span class="ccs-card-shade"></span><span class="ccs-card-name">${item.name}</span></button></article>`);
+}
+window.decorate = async () => (await import('../scripts/card-overlay.js')).decorateCards(cardsEl, actor);
 radialMenu.open(token);
 window.ready = true;
 </script>

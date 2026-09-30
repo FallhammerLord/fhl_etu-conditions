@@ -115,6 +115,15 @@ check(await page.evaluate(() => !window.radialMenu.isOpen), 'Esc at root closes 
 await wait();
 check(await page.evaluate(() => !document.querySelector('.etu-radial')), 'the closed ring is removed after furling');
 
+// Card Sheet overlay: hacked cards only (Missile Bay 3; both halves of Silver Hail, hacked 2 above).
+await page.evaluate(() => window.decorate());
+const hackedCards = await page.evaluate(() => [...document.querySelectorAll('.ccs-card.etu-hacked')].map((c) => c.dataset.itemId + ':' + c.querySelector('.etu-hack-badge').textContent.replace(/\..*/, '')));
+check(hackedCards.length === 3, `three hacked cards (bay, artifact, linked attack), got ${hackedCards.join(', ')}`);
+check(await page.evaluate(() => !document.querySelector('.ccs-card[data-item-id="rail"] .etu-hack-badge')), 'unhacked cards get no overlay');
+await page.evaluate(() => window.decorate());
+check(await page.evaluate(() => document.querySelectorAll('.etu-hack-badge').length) === 3, 're-decorating does not stack overlays');
+await page.screenshot({ path: new URL('card-overlay.png', out).pathname, clip: { x: 0, y: 440, width: 900, height: 220 } });
+
 // A right-click opens on release, not on press; a release after dragging (a pan) opens nothing.
 const rightClick = (dx) => page.evaluate(async (dx) =>
 {
