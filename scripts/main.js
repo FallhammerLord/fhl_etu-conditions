@@ -9,7 +9,7 @@ import { registerStatusEffects } from './conditions.js';
 import { api } from './api.js';
 import { drawPips, positionPips, redrawAllPips, repositionAllPips } from './pips.js';
 import { radialMenu } from './radial.js';
-import { activeTokens, installTokenRightClick } from './compat.js';
+import { activeTokens, ensureStylesheet, installTokenRightClick } from './compat.js';
 
 Hooks.once('init', () =>
 {
@@ -18,6 +18,8 @@ Hooks.once('init', () =>
    installTokenRightClick((token, event) => radialMenu.open(token, event));
    game.modules.get(MODULE_ID).api = api;
 });
+
+Hooks.once('ready', () => ensureStylesheet(MODULE_ID, 'styles/etu.css'));
 
 Hooks.on('drawToken', (token) => drawPips(token));
 Hooks.on('refreshToken', (token) =>

@@ -89,6 +89,25 @@ export function makePip(label, color, height)
 }
 
 /**
+ * Adds the module's stylesheet if Foundry didn't load it. Foundry reads module.json only when a world
+ * launches, so a stylesheet added in an update is missing until then; without it the radial menu
+ * renders off-screen.
+ *
+ * @param {string} moduleId - This module's ID.
+ * @param {string} path - Stylesheet path inside the module, e.g. "styles/etu.css".
+ */
+export function ensureStylesheet(moduleId, path)
+{
+   const file = `modules/${moduleId}/${path}`;
+   const loaded = [...document.querySelectorAll('link[rel="stylesheet"]')].some((l) => l.href.includes(file));
+   if (loaded) { return; }
+   const link = document.createElement('link');
+   link.rel = 'stylesheet';
+   link.href = foundry.utils?.getRoute?.(file) ?? file;
+   document.head.append(link);
+}
+
+/**
  * Routes right-clicks on tokens to `handler`. Extends whatever token class is configured at `init`
  * (the Cypher System sets its own), so its ruler and any other module's subclass keep working.
  * Shift + right-click, or a handler that returns false, falls through to Foundry's Token HUD.

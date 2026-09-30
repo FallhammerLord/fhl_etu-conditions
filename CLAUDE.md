@@ -45,6 +45,12 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 - Colors only through CSS tokens.
 - After any scripted cut or splice of a file, diff it against the previous commit.
 
+## Lessons from testing this module
+
+- Foundry reads `module.json` only when a world launches. New `styles`, `esmodules`, or `languages` entries need a world relaunch, not F5. `ensureStylesheet` covers the stylesheet.
+- A right-click we handle must still stop propagation at the token, as core does, or the canvas starts a right-drag pan that never ends.
+- Don't draw an overlay under a held mouse button: it steals the release from the canvas. The ring opens after the right-button release.
+
 ## Map
 
 | Path | Role |
