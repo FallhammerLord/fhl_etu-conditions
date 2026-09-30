@@ -10,7 +10,7 @@ import { extname } from 'node:path';
 import { chromium } from 'playwright';
 
 const root = new URL('../', import.meta.url);
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const server = http.createServer(async (req, res) =>
 {
    if (req.url === '/favicon.ico') { res.writeHead(204); res.end(); return; }

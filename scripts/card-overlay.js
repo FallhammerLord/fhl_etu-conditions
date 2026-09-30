@@ -1,6 +1,8 @@
 /**
  * Hacked overlay on the Cypher Card Sheet's item cards (only when that module's sheet is in use).
- * A hacked system's card gets a hazard tint and a "HACKED n" badge; unhacked cards are untouched.
+ * A hacked system's card gets a hazard tint and a "HACKED n" stamp across its middle, like a rejected
+ * stamp on a document; unhacked cards are untouched. Both sit under the card's own text (name, value,
+ * training), which has a dark outline, so the text stays readable on top. Clicks pass through.
  * Linked cards (an attack linked to its artifact) read the artifact's rating, so both show it.
  * Card markup baseline: cypher-card-sheet 1.0 (`article.ccs-card[data-item-id] > .ccs-card-body`).
  */
@@ -8,9 +10,6 @@
 import { MODULE_ID } from './constants.js';
 import { conditionColor } from './conditions.js';
 import { hackOf } from './items.js';
-import { highContrast } from './settings.js';
-import { LABEL, readableOn } from './color.js';
-import { iconDefs } from './icons.js';
 
 const tf = (key, data) => game.i18n.format(`${MODULE_ID}.${key}`, data);
 
@@ -37,8 +36,6 @@ export function onRenderCardSheet(app, element)
 export function decorateCards(root, actor)
 {
    const color = conditionColor('hacked');
-   const ink = readableOn(color, LABEL[highContrast() ? 'contrast' : 'standard']);
-   ensureIcons(root);
    for (const card of root.querySelectorAll('article.ccs-card[data-item-id]'))
    {
       for (const old of card.querySelectorAll('.etu-hack-veil, .etu-hack-badge')) { old.remove(); }
@@ -49,7 +46,6 @@ export function decorateCards(root, actor)
 
       card.classList.add('etu-hacked');
       card.style.setProperty('--etu-hack', color);
-      card.style.setProperty('--etu-hack-ink', ink);
       const body = card.querySelector('.ccs-card-body') ?? card;
       const note = tf('card.hackedNote', { level: rating });
 
@@ -59,8 +55,6 @@ export function decorateCards(root, actor)
 
       const badge = document.createElement('span');
       badge.className = 'etu-hack-badge';
-      badge.dataset.tooltip = note;
-      badge.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#etu-icon-hacked"/></svg>';
       const text = document.createElement('span');
       text.textContent = tf('card.hacked', { level: rating });
       const sr = document.createElement('span');
@@ -68,21 +62,9 @@ export function decorateCards(root, actor)
       sr.textContent = `. ${note}`;
       badge.append(text, sr);
 
-      // Under the card's own text (caps, name, value), over its art.
+      // Over the art, under the card's text: right after the shade the card draws over its art.
       const shade = body.querySelector('.ccs-card-shade');
       if (shade) { shade.after(veil, badge); }
-      else { body.append(veil, badge); }
+      else { body.prepend(veil, badge); }
    }
-}
-
-/** The badge's chip icon is an SVG symbol; make sure the page has the symbol set once. */
-function ensureIcons(root)
-{
-   const doc = root.ownerDocument ?? document;
-   if (doc.getElementById('etu-icon-hacked')) { return; }
-   const holder = doc.createElement('div');
-   holder.id = 'etu-icon-sprite';
-   holder.hidden = true;
-   holder.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0">${iconDefs()}</svg>`;
-   doc.body.append(holder);
 }

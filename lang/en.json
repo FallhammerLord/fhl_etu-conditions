@@ -94,7 +94,7 @@
     },
     "card": {
       "hacked": "HACKED {level}",
-      "hackedNote": "Hacked (rating {level}): Reactor test against {level} before using it"
+      "hackedNote": "Hacked, rating {level}: Reactor test against {level} before using it"
     },
     "mount": {
       "hardpoint": "Hard Point",
