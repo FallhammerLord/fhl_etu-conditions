@@ -7,15 +7,15 @@ import { MODULE_ID } from './constants.js';
 import { registerSettings } from './settings.js';
 import { registerStatusEffects } from './conditions.js';
 import { api } from './api.js';
-import { drawPips, positionPips, redrawActorPips, redrawAllPips, repositionAllPips } from './pips.js';
+import { drawPips, positionPips, redrawAllPips, repositionAllPips } from './pips.js';
 import { radialMenu } from './radial.js';
-import { installTokenRightClick } from './compat.js';
+import { activeTokens, installTokenRightClick } from './compat.js';
 
 Hooks.once('init', () =>
 {
    registerSettings({ onPipsChange: redrawAllPips });
    registerStatusEffects();
-   installTokenRightClick((token) => radialMenu.open(token));
+   installTokenRightClick((token, event) => radialMenu.open(token, event));
    game.modules.get(MODULE_ID).api = api;
 });
 
@@ -54,22 +54,39 @@ for (const hook of ['createActiveEffect', 'updateActiveEffect', 'deleteActiveEff
    Hooks.on(hook, (doc) =>
    {
       const actor = owningActor(doc);
-      if (actor)
-      {
-         redrawActorPips(actor);
-         radialMenu.refresh(actor);
-      }
+      if (actor) { conditionsChanged(activeTokens(actor)); }
    });
 }
 
-// Unlinked tokens store their actor changes in the token's delta; redraw from the token update as well,
-// in case the embedded-document hooks above don't fire for synthetic actors.
+// Unlinked tokens keep their actor changes in the token's ActorDelta. Redraw from those updates too,
+// in case the hooks above fire before the token's synthetic actor has caught up.
+for (const hook of ['createActorDelta', 'updateActorDelta'])
+{
+   Hooks.on(hook, (delta) => conditionsChanged([delta.parent?.object]));
+}
 Hooks.on('updateToken', (tokenDoc, change) =>
 {
-   if (change?.delta && tokenDoc.object)
-   {
-      drawPips(tokenDoc.object);
-      radialMenu.refresh(tokenDoc.object.actor);
-   }
+   if (change?.delta) { conditionsChanged([tokenDoc.object]); }
    if (change && 'hidden' in change) { radialMenu.refresh(); }
 });
+
+/**
+ * Redraws pips and the open menu for these tokens on the next tick, after Foundry has finished
+ * applying the change (synthetic actors update a moment after their effect hooks fire).
+ *
+ * @param {Array<Token|undefined>} tokens - Tokens whose conditions may have changed.
+ */
+function conditionsChanged(tokens)
+{
+   const list = tokens.filter(Boolean);
+   if (!list.length) { return; }
+   setTimeout(() =>
+   {
+      for (const token of list)
+      {
+         if (token.destroyed) { continue; }
+         drawPips(token);
+         if (token === radialMenu.token) { radialMenu.refresh(); }
+      }
+   }, 0);
+}

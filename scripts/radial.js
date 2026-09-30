@@ -22,6 +22,12 @@ const MAX_SLICES = 8;
 const GAUGE_START = 225;
 const GAUGE_SWEEP = 270;
 
+/** A right-button release this far (screen px) from the press was a canvas pan, not a click. */
+const PAN_THRESHOLD = 6;
+
+/** Wait after the right-button release before drawing the ring (ms). */
+const OPEN_DELAY = 60;
+
 /** Item types offered under Hacked (weapons, gear, and anything already hacked). */
 const HACKABLE_TYPES = new Set(['attack', 'equipment', 'armor', 'artifact']);
 
@@ -137,6 +143,8 @@ class RadialMenu
       this.root = null;
       this.animate = false;
       this.lastClosed = null;
+      this.pending = null;
+      this.shownAt = 0;
       this.onKey = this.onKey.bind(this);
       this.onOutside = this.onOutside.bind(this);
    }
@@ -144,10 +152,16 @@ class RadialMenu
    get isOpen() { return !!this.token; }
 
    /**
+    * Handles a right-click on a token. Foundry reports the click when the button goes down, so the ring
+    * waits for the release: opening under a held button would take the release away from the canvas and
+    * leave Foundry stuck mid right-drag (panning). A release after the pointer moved was a pan, so the
+    * ring stays closed.
+    *
     * @param {Token} token - The token right-clicked.
-    * @returns {boolean} True if the menu opened.
+    * @param {object} [event] - The pointer-down event. Omit to open at once (macros, tests).
+    * @returns {boolean} True if the right-click is ours (Foundry's HUD should not open).
     */
-   open(token)
+   open(token, event)
    {
       if (!token?.actor || !token.document?.isOwner) { return false; }
       // A second right-click on the same token closes the menu (the pointerdown already did) and stays closed.
@@ -155,6 +169,36 @@ class RadialMenu
       closeCoreHud();
       controlToken(token);
       this.close();
+      if (!event) { this.show(token); return true; }
+
+      const start = { x: event.clientX ?? event.client?.x, y: event.clientY ?? event.client?.y };
+      const onUp = (up) =>
+      {
+         if (up.button !== 2) { return; }
+         this.cancelPending();
+         const moved = Number.isFinite(start.x) && Math.hypot(up.clientX - start.x, up.clientY - start.y) > PAN_THRESHOLD;
+         if (moved) { return; }
+         // Let the context-menu event that follows the release (on Windows) pass before the ring covers the cursor.
+         this.pending = { timer: setTimeout(() => { this.pending = null; this.show(token); }, OPEN_DELAY) };
+      };
+      window.addEventListener('pointerup', onUp, true);
+      this.pending = { onUp };
+      return true;
+   }
+
+   cancelPending()
+   {
+      if (this.pending?.onUp) { window.removeEventListener('pointerup', this.pending.onUp, true); }
+      if (this.pending?.timer) { clearTimeout(this.pending.timer); }
+      this.pending = null;
+   }
+
+   /** @param {Token} token - Draw the ring around this token now. */
+   show(token)
+   {
+      if (!token?.actor || token.destroyed) { return; }
+      this.close();
+      this.shownAt = performance.now();
       this.token = token;
       this.path = [];
       this.page = 0;
@@ -164,11 +208,11 @@ class RadialMenu
       this.render();
       document.addEventListener('keydown', this.onKey, true);
       document.addEventListener('pointerdown', this.onOutside, true);
-      return true;
    }
 
    close()
    {
+      this.cancelPending();
       this.root?.remove();
       this.root = null;
       this.token = null;
@@ -367,7 +411,13 @@ class RadialMenu
          + '<div class="etu-radial-crumb"></div><div class="etu-radial-readout" hidden></div>';
       const surface = this.root.querySelector('svg');
       surface.addEventListener('click', (e) => this.onClick(e));
-      surface.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); this.back(); });
+      surface.addEventListener('contextmenu', (e) =>
+      {
+         e.preventDefault();
+         e.stopPropagation();
+         // Ignore a late context-menu event from the right-click that opened the ring.
+         if (performance.now() - this.shownAt > 300) { this.back(); }
+      });
       surface.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
       surface.addEventListener('pointermove', (e) => this.onHover(e));
       surface.addEventListener('pointerleave', () => { if (this.hot) { this.hot = null; this.renderReadout(); } });

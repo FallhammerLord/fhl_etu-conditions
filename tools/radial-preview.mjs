@@ -81,6 +81,23 @@ await page.screenshot({ path: new URL('radial-root-after.png', out).pathname });
 await page.keyboard.press('Escape');
 check(await page.evaluate(() => !window.radialMenu.isOpen && !document.querySelector('.etu-radial')), 'Esc at root closes the menu');
 
+// A right-click opens on release, not on press; a release after dragging (a pan) opens nothing.
+const rightClick = (dx) => page.evaluate(async (dx) =>
+{
+   window.radialMenu.open(window.token, { clientX: 420, clientY: 330 });
+   const openBeforeRelease = window.radialMenu.isOpen;
+   window.dispatchEvent(new PointerEvent('pointerup', { button: 2, clientX: 420 + dx, clientY: 330 }));
+   await new Promise((r) => setTimeout(r, 150));
+   const result = { openBeforeRelease, openAfter: window.radialMenu.isOpen };
+   window.radialMenu.close();
+   return result;
+}, dx);
+const click = await rightClick(0);
+check(!click.openBeforeRelease, 'ring waits for the right-button release');
+check(click.openAfter, 'ring opens after the release');
+const pan = await rightClick(40);
+check(!pan.openAfter, 'a right-drag (pan) does not open the ring');
+
 check(errors.length === 0, `no page errors (${errors.join(' | ')})`);
 await browser.close();
 server.close();

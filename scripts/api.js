@@ -82,6 +82,33 @@ export const api = {
    },
 
    /**
+    * Logs and returns what the module sees for each token, for bug reports.
+    *
+    * @param {*} [target] - Tokens to inspect (undefined = selected tokens).
+    * @returns {object[]} One report per token.
+    */
+   diagnose(target)
+   {
+      const tokens = target === undefined ? controlledTokens() : [target].flat().map((t) => t?.object ?? t);
+      const reports = tokens.map((token) =>
+      {
+         const actor = token?.actor;
+         const pips = token?.etuPips;
+         return {
+            token: token?.name,
+            actorType: actor?.type,
+            linked: token?.document?.actorLink,
+            owner: actor?.isOwner,
+            conditions: actor ? getConditions(actor) : null,
+            effects: actor?.effects.map((e) => ({ name: e.name, statuses: [...(e.statuses ?? [])], disabled: e.disabled })) ?? [],
+            pips: pips ? { destroyed: pips.destroyed, visible: pips.visible, worldVisible: pips.worldVisible, onToken: pips.parent === token } : null
+         };
+      });
+      console.log('ETU Conditions | diagnose', reports);
+      return reports;
+   },
+
+   /**
     * @param {*} target - Units to clear (undefined = selected tokens).
     * @param {string} [key] - One condition key or "hacked"; omit to clear everything.
     * @returns {Promise<void[]>}
