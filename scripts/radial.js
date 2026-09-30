@@ -10,6 +10,7 @@ import { adjustLevel, clearConditions, getLevel, setHack, setLevel } from './sto
 import { canEdit } from './settings.js';
 import { resolveActors } from './api.js';
 import { hackOf, mountOf, unitSystems } from './items.js';
+import { iconDefs, iconId } from './icons.js';
 import {
    closeCoreHud, controlToken, controlledTokens, openCoreHud, tokenScreenGeometry,
    toggleCombat, toggleHidden, toggleTarget
@@ -28,6 +29,18 @@ const PAN_THRESHOLD = 6;
 
 /** Wait after the right-button release before drawing the ring (ms). */
 const OPEN_DELAY = 60;
+
+/** How long a ring takes to furl away before it's removed (ms). Matches the CSS. */
+const LEAVE_MS = 200;
+
+/** Icon for each condition's slice and gauge. */
+const CONDITION_ICONS = { temperature: 'thermal', targetLock: 'targetLock', jammed: 'jammed', recoil: 'recoil' };
+
+/** @returns {boolean} False when the player's system asks for reduced motion. */
+function motionAllowed()
+{
+   return !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+}
 
 /** Console trace, on when `CONFIG.debug.etuConditions = true`. */
 function debug(...args)
@@ -171,7 +184,7 @@ class RadialMenu
       this.page = 0;
       this.hot = null;
       this.root = null;
-      this.animate = false;
+      this.transition = null;
       this.lastClosed = null;
       this.pending = null;
       this.shownAt = 0;
@@ -239,24 +252,36 @@ class RadialMenu
    show(token)
    {
       if (!token?.actor || token.destroyed) { return; }
-      this.close();
+      this.close({ animate: false });
       debug('show ring', { token: token.name });
       this.shownAt = performance.now();
       this.token = token;
       this.path = [];
       this.page = 0;
       this.hot = null;
-      this.animate = true;
+      this.transition = 'open';
       this.build();
       this.render();
       document.addEventListener('keydown', this.onKey, true);
       document.addEventListener('pointerdown', this.onOutside, true);
    }
 
-   close()
+   /**
+    * @param {object} [options]
+    * @param {boolean} [options.animate=true] - Furl the ring closed instead of removing it at once.
+    */
+   close({ animate = true } = {})
    {
       this.cancelPending();
-      this.root?.remove();
+      const root = this.root;
+      if (root && animate && motionAllowed())
+      {
+         // Furl the ring in, then remove it. It stops taking input straight away.
+         root.classList.add('is-closing');
+         root.querySelector('.etu-layer')?.classList.add('etu-leave-close');
+         setTimeout(() => root.remove(), LEAVE_MS);
+      }
+      else { root?.remove(); }
       this.root = null;
       this.token = null;
       document.removeEventListener('keydown', this.onKey, true);
@@ -276,7 +301,7 @@ class RadialMenu
    {
       const token = this.token;
       const actor = token.actor;
-      const g = (key) => ({ key, label: t(`condition.${key}`), type: 'gauge', gauge: conditionGauge(key) });
+      const g = (key) => ({ key, label: t(`condition.${key}`), type: 'gauge', gauge: conditionGauge(key), icon: CONDITION_ICONS[key] });
       const systems = unitSystems(actor);
       const hackedCount = systems.filter((i) => hackOf(i) > 0).length;
       const lock = getLevel(actor, 'targetLock');
@@ -288,35 +313,38 @@ class RadialMenu
          children: [
             { ...g('temperature'), label: t('menu.thermal') },
             {
-               key: 'signal', label: t('menu.signal'), type: 'group',
+               key: 'signal', label: t('menu.signal'), type: 'group', icon: 'signal',
                badge: lock || jam ? `L${lock} J${jam}` : '',
                children: [g('targetLock'), g('jammed')]
             },
             g('recoil'),
             {
-               key: 'hacked', label: t('condition.hacked'), type: 'group',
+               key: 'hacked', label: t('condition.hacked'), type: 'group', icon: 'hacked',
                badge: hackedCount ? tf('menu.hackedCount', { count: hackedCount }) : '',
                empty: t('menu.noSystems'),
                children: systems.map((item) =>
                {
                   const mount = mountOf(item);
-                  return { key: item.id, label: item.name, type: 'gauge', gauge: hackGauge(item), tag: mount ? t(`mount.short.${mount}`) : '' };
+                  return {
+                     key: item.id, label: item.name, type: 'gauge', gauge: hackGauge(item),
+                     tag: mount ? t(`mount.short.${mount}`) : '', icon: mount ?? 'system'
+                  };
                })
             },
             {
-               key: 'token', label: t('menu.token'), type: 'group',
+               key: 'token', label: t('menu.token'), type: 'group', icon: 'token',
                children: [
                   { key: 'target', label: t(token.isTargeted ? 'menu.untarget' : 'menu.target'), type: 'action', stay: true,
-                    run: () => toggleTarget(token) },
+                    icon: 'target', run: () => toggleTarget(token) },
                   { key: 'combat', label: t(token.inCombat ? 'menu.leaveCombat' : 'menu.joinCombat'), type: 'action', stay: true,
-                    run: () => toggleCombat(token) },
+                    icon: 'combat', run: () => toggleCombat(token) },
                   ...(game.user.isGM ? [{ key: 'hide', label: t(token.document.hidden ? 'menu.reveal' : 'menu.hide'), type: 'action', stay: true,
-                    run: () => toggleHidden(token) }] : []),
+                    icon: token.document.hidden ? 'reveal' : 'hide', run: () => toggleHidden(token) }] : []),
                   { key: 'core', label: t('menu.foundryHud'), type: 'action',
-                    run: () => { this.close(); openCoreHud(token); } }
+                    icon: 'hud', run: () => { this.close(); openCoreHud(token); } }
                ]
             },
-            { key: 'clear', label: t('menu.clearAll'), type: 'action', stay: true,
+            { key: 'clear', label: t('menu.clearAll'), type: 'action', stay: true, icon: 'clear',
               run: () => Promise.all(this.targets().map((a) => clearConditions(a))) }
          ]
       };
@@ -352,7 +380,7 @@ class RadialMenu
       const page = this.page % pages;
       return [
          ...kids.slice(page * per, page * per + per),
-         { key: '__more', label: t('menu.more'), type: 'more', badge: `${page + 1}/${pages}` }
+         { key: '__more', label: t('menu.more'), type: 'more', badge: `${page + 1}/${pages}`, icon: 'more' }
       ];
    }
 
@@ -364,7 +392,7 @@ class RadialMenu
       if (node.type !== 'group') { return; }
       const slice = this.slices(node)[index];
       if (!slice) { return; }
-      if (slice.type === 'more') { this.page += 1; this.animate = true; this.render(); return; }
+      if (slice.type === 'more') { this.page += 1; this.transition = 'page'; this.render(); return; }
       if (slice.type === 'action')
       {
          await slice.run();
@@ -374,7 +402,7 @@ class RadialMenu
       this.path.push(slice.key);
       this.page = 0;
       this.hot = null;
-      this.animate = true;
+      this.transition = 'down';
       this.render();
    }
 
@@ -384,7 +412,7 @@ class RadialMenu
       this.path.pop();
       this.page = 0;
       this.hot = null;
-      this.animate = true;
+      this.transition = 'up';
       this.render();
    }
 
@@ -533,14 +561,27 @@ class RadialMenu
       surface.setAttribute('height', size);
       surface.setAttribute('viewBox', `0 0 ${size} ${size}`);
       Object.assign(surface.style, { left: `${-c}px`, top: `${-c}px` });
-      surface.replaceChildren();
-      const layer = svg('g', this.animate ? { class: 'etu-ring-in' } : {});
-      this.animate = false;
+      if (!surface.querySelector('defs')) { surface.insertAdjacentHTML('afterbegin', iconDefs()); }
+
+      // A transition keeps the old ring briefly so it can furl out while the new one unfurls.
+      const transition = motionAllowed() ? this.transition : null;
+      this.transition = null;
+      for (const old of surface.querySelectorAll('.etu-layer'))
+      {
+         if (!transition) { old.remove(); continue; }
+         old.classList.replace('etu-layer', 'etu-leaving');
+         old.classList.add(`etu-leave-${transition}`);
+         setTimeout(() => old.remove(), LEAVE_MS);
+      }
+      const layer = svg('g', {
+         class: `etu-layer${transition ? ` etu-enter-${transition}` : ''}`,
+         style: `--cx: ${c}px; --cy: ${c}px`
+      });
       layer.append(svg('circle', { cx: c, cy: c, r: r1 + 6, class: 'etu-ring-backdrop' }));
 
       const { node, trail } = this.current();
       if (node.type === 'group') { this.renderGroup(layer, node, actor, c, r0, r1); }
-      else if (node.type === 'gauge') { this.renderGauge(layer, node.gauge, actor, c, r0, r1); }
+      else if (node.type === 'gauge') { this.renderGauge(layer, node, actor, c, r0, r1); }
 
       layer.append(svg('circle', { cx: c, cy: c, r: r0 - 3, class: 'etu-center', 'data-act': 'back' }));
       surface.append(layer);
@@ -549,7 +590,7 @@ class RadialMenu
       const crumb = this.root.querySelector('.etu-radial-crumb');
       crumb.textContent = trail.join('  ›  ') + (count > 1 ? `  ·  ${tf('menu.selected', { count })}` : '');
       crumb.style.top = `${-r1 - 46}px`;
-      this.root.querySelector('.etu-radial-readout').style.top = `${r1 + 14}px`;
+      this.root.querySelector('.etu-radial-readout').style.top = `${r1 + 26}px`;
       this.renderReadout();
    }
 
@@ -572,18 +613,26 @@ class RadialMenu
          const locked = s.type === 'gauge' && !s.gauge.editable(actor);
          const cls = ['etu-slice', `etu-slice-${s.type}`, locked ? 'is-locked' : '',
             this.hot?.kind === 'slice' && this.hot.i === i ? 'is-hot' : ''].filter(Boolean).join(' ');
-         layer.append(svg('path', { d: n === 1 ? sector(c, c, r0, r1, 0.01, 359.99) : sector(c, c, r0, r1, a0, a1), class: cls, 'data-act': 'slice', 'data-i': i }));
+         // Each wedge is its own group so it can furl and unfurl on its own beat.
+         const wedge = svg('g', { class: 'etu-wedge', style: `--i: ${i}` });
+         layer.append(wedge);
+         wedge.append(svg('path', { d: n === 1 ? sector(c, c, r0, r1, 0.01, 359.99) : sector(c, c, r0, r1, a0, a1), class: cls, 'data-act': 'slice', 'data-i': i }));
 
          const [lx, ly] = polar(c, c, (r0 + r1) / 2, mid);
+         // Faint icon behind the label, like a stamped texture.
+         // As large as the ring's width allows, but no wider than the wedge's arc at mid-radius.
+         const arc = Math.PI * (r0 + r1) * (span / 360);
+         const iconSize = Math.min(RING_WIDTH * 0.78, arc * 0.85);
+         wedge.append(svg('use', { href: `#${iconId(s.icon)}`, x: lx - iconSize / 2, y: ly - iconSize / 2, width: iconSize, height: iconSize, class: 'etu-slice-icon' }));
          const lines = labelLines(s.label);
          const level = s.type === 'gauge' ? s.gauge.get(actor) : null;
          let value = s.type === 'gauge' ? (level ? s.gauge.cell(level) : '') : s.badge ?? '';
          if (s.tag) { value = value ? `${s.tag} · ${value}` : s.tag; }
          const top = ly - (lines.length - 1) * 6 - (value ? 5 : 0);
-         lines.forEach((line, j) => layer.append(svg('text', { x: lx, y: top + j * 12 + 4, class: 'etu-slice-label' }, line.toUpperCase())));
+         lines.forEach((line, j) => wedge.append(svg('text', { x: lx, y: top + j * 12 + 4, class: 'etu-slice-label' }, line.toUpperCase())));
          if (value)
          {
-            layer.append(svg('text', {
+            wedge.append(svg('text', {
                x: lx, y: top + lines.length * 12 + 6, class: 'etu-slice-value',
                style: `fill: ${s.type !== 'gauge' ? 'var(--etu-accent)' : level ? s.gauge.color(level) : 'var(--etu-muted)'}`
             }, value));
@@ -591,18 +640,19 @@ class RadialMenu
          if (s.type === 'group' || s.type === 'more')
          {
             const [dx, dy] = polar(c, c, r1 - 7, mid);
-            layer.append(svg('circle', { cx: dx, cy: dy, r: 2.5, class: 'etu-drill-dot' }));
+            wedge.append(svg('circle', { cx: dx, cy: dy, r: 2.5, class: 'etu-drill-dot' }));
          }
          if (i < 9)
          {
             const [nx, ny] = polar(c, c, r1 + 14, mid);
-            layer.append(svg('text', { x: nx, y: ny + 4, class: 'etu-slice-key' }, String(i + 1)));
+            wedge.append(svg('text', { x: nx, y: ny + 4, class: 'etu-slice-key' }, String(i + 1)));
          }
       });
    }
 
-   renderGauge(layer, gauge, actor, c, r0, r1)
+   renderGauge(layer, node, actor, c, r0, r1)
    {
+      const gauge = node.gauge;
       const levels = gauge.levels;
       const current = gauge.get(actor);
       const w = GAUGE_SWEEP / levels.length;
@@ -619,14 +669,22 @@ class RadialMenu
             : v > 0 && v <= current;
          const cls = ['etu-cell', active ? 'is-active' : '', within && !active ? 'is-within' : '', locked ? 'is-locked' : '',
             this.hot?.kind === 'cell' && this.hot.v === v ? 'is-hot' : ''].filter(Boolean).join(' ');
+         // Cells sweep in one after another around the arc.
+         const wedge = svg('g', { class: 'etu-wedge', style: `--i: ${i}` });
+         layer.append(wedge);
          const attrs = { d: sector(c, c, r0 + 8, r1, a0, a1), class: cls, 'data-act': 'cell', 'data-v': v };
          if (active || within) { attrs.style = `fill: ${gauge.color(v)}`; }
-         layer.append(svg('path', attrs));
+         wedge.append(svg('path', attrs));
          const [lx, ly] = polar(c, c, (r0 + 8 + r1) / 2, mid);
-         layer.append(svg('text', { x: lx, y: ly + 4, class: `etu-cell-label${active ? ' is-active' : ''}` }, gauge.cell(v)));
+         wedge.append(svg('text', { x: lx, y: ly + 4, class: `etu-cell-label${active ? ' is-active' : ''}` }, gauge.cell(v)));
       });
-      const [bx, by] = polar(c, c, (r0 + r1) / 2 + 4, 180);
-      layer.append(svg('text', { x: bx, y: by + 4, class: 'etu-slice-key' }, `◂ ${t('menu.back')}`));
+      // The gap at the bottom holds the condition's icon and the way back.
+      const gap = svg('g', { class: 'etu-wedge etu-gauge-gap', style: `--i: ${levels.length}` });
+      layer.append(gap);
+      const [gx, gy] = polar(c, c, (r0 + r1) / 2 + 2, 180);
+      const iconSize = 26;
+      gap.append(svg('use', { href: `#${iconId(node.icon)}`, x: gx - iconSize / 2, y: gy - iconSize - 2, width: iconSize, height: iconSize, class: 'etu-gap-icon' }));
+      gap.append(svg('text', { x: gx, y: gy + 12, class: 'etu-slice-key' }, `◂ ${t('menu.back')}`));
    }
 
    renderReadout()

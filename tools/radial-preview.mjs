@@ -35,21 +35,25 @@ page.on('console', (m) => { if (m.type() === 'error') { errors.push(m.text()); }
 
 let failed = false;
 const check = (ok, msg) => { if (!ok) { failed = true; console.error(`FAIL ${msg}`); } };
-const wait = () => page.waitForTimeout(250);
+const wait = () => page.waitForTimeout(500);
+// The live ring; a ring that is furling away also carries data-act while it fades.
+const live = (sel) => `.etu-layer ${sel}`;
 
 await page.goto(`${base}/tools/radial-harness.html`);
 await page.waitForFunction(() => window.ready === true);
+await page.waitForTimeout(90);
+await page.screenshot({ path: new URL('radial-unfurl.png', out).pathname });
 await wait();
 await page.screenshot({ path: new URL('radial-root.png', out).pathname });
 
 // Signal ring, then the Target Lock gauge, then set 4 by clicking its cell.
-await page.click('[data-act="slice"][data-i="1"]');
-await page.click('[data-act="slice"][data-i="0"]');
+await page.click(live('[data-act="slice"][data-i="1"]'));
+await page.click(live('[data-act="slice"][data-i="0"]'));
 await wait();
-await page.click('[data-act="cell"][data-v="4"]');
+await page.click(live('[data-act="cell"][data-v="4"]'));
 await wait();
 check(await page.evaluate(() => window.store.getLevel(window.actor, 'targetLock')) === 4, 'clicking cell 4 sets Target Lock 4');
-await page.hover('[data-act="cell"][data-v="6"]');
+await page.hover(live('[data-act="cell"][data-v="6"]'));
 await page.screenshot({ path: new URL('radial-gauge.png', out).pathname });
 
 // Wheel on the gauge raises it; arrow keys step it.
@@ -67,12 +71,12 @@ await page.keyboard.press('4');
 await wait();
 await page.screenshot({ path: new URL('radial-hacked.png', out).pathname });
 check(await page.evaluate(() => window.radialMenu.path.join('/')) === 'hacked', 'key 4 opens Hacked');
-const hackedSlices = await page.locator('[data-act="slice"]').count();
+const hackedSlices = await page.locator(live('[data-act="slice"]')).count();
 check(hackedSlices === 4, `Hacked lists 4 systems (rail, Silver Hail once, bay, sensor array), got ${hackedSlices}`);
 
 // Hacking the linked attack's system: set 2 on Silver Hail, then read it from the attack half.
-await page.click('[data-act="slice"][data-i="1"]');
-await page.click('[data-act="cell"][data-v="2"]');
+await page.click(live('[data-act="slice"][data-i="1"]'));
+await page.click(live('[data-act="cell"][data-v="2"]'));
 await wait();
 check(await page.evaluate(() => window.store.getHacked(window.actor).map((h) => `${h.name}:${h.rating}`).join(',')) === 'Silver Hail:2,Missile Bay:3',
    'Silver Hail hacked once, on the artifact');
@@ -82,7 +86,7 @@ await wait();
 // Temperature via root wheel: Hot (2) -> Overheating (3).
 await page.keyboard.press('Escape');
 await wait();
-await page.hover('[data-act="slice"][data-i="0"]');
+await page.hover(live('[data-act="slice"][data-i="0"]'));
 await page.mouse.wheel(0, -100);
 await wait();
 check(await page.evaluate(() => window.store.getLevel(window.actor, 'temperature')) === 3, 'wheel on Thermal raises to Overheating');
@@ -90,7 +94,9 @@ await page.screenshot({ path: new URL('radial-root-after.png', out).pathname });
 
 // Esc at root closes; clicking outside closes.
 await page.keyboard.press('Escape');
-check(await page.evaluate(() => !window.radialMenu.isOpen && !document.querySelector('.etu-radial')), 'Esc at root closes the menu');
+check(await page.evaluate(() => !window.radialMenu.isOpen), 'Esc at root closes the menu');
+await wait();
+check(await page.evaluate(() => !document.querySelector('.etu-radial')), 'the closed ring is removed after furling');
 
 // A right-click opens on release, not on press; a release after dragging (a pan) opens nothing.
 const rightClick = (dx) => page.evaluate(async (dx) =>

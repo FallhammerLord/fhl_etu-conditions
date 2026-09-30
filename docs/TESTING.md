@@ -31,7 +31,7 @@ What to look for:
 2. Pips stay readable at different token sizes and zoom levels.
 3. Linked PC tokens and unlinked NPC tokens both work. Unlinked copies of the same NPC keep separate conditions.
 4. Running `adjust` quickly several times gives the right count, with no duplicate effects.
-5. As a player (a user who owns a unit): Temperature and Recoil change; Target Lock, Jammed, and Hacked show a "GM only" warning. These rights are toggles in Module Settings.
+5. As a player (a user who owns a unit): every condition changes on units they own. The GM can make any condition GM-only in Module Settings; then players get a warning instead.
 6. **Show condition pips on tokens** (Module Settings) hides and shows the pips.
 7. No errors in the console (F12). If something breaks, a screenshot of the console helps most.
 
@@ -48,13 +48,23 @@ Right-click a token you own.
 5. Keys 1–9 pick slices; ← → step a gauge. These should not fire your hotbar macros while the ring is open.
 6. Shift + right-click opens Foundry's normal Token HUD. Token → Foundry HUD does the same.
 7. Select two tokens, right-click one of them, set a condition: both change. The breadcrumb says "2 selected".
-8. Hacked lists the unit's attacks, equipment, armor, and artifacts. More than seven adds a "More" slice that pages.
+8. Hacked lists the unit's systems (see "Which items are systems" below). More than seven adds a "More" slice that pages.
 9. Pan and zoom with the ring open: it follows the token and stays the same size.
-10. As a player: GM-only conditions look dimmed and show a warning when clicked.
+10. As a player: conditions the GM made GM-only look dimmed and show a warning when clicked.
 
-## Item tags: which items are systems
+## Ring look and motion
 
-Open a weapon or gear item on a unit. Its **Settings** tab has an **ETU system** section.
+1. Each wedge shows a faint icon behind its label (thermometer, antenna, recoil arrow, chip, figure, circled X). Hovering a wedge brightens its icon a little.
+2. Opening: wedges unfurl outward from the token, one after another.
+3. Drilling into Signal: the first ring opens outward and fades while the Signal ring unfurls. Esc: the Signal ring furls into the center while the first ring settles back in.
+4. Gauge rings sweep their cells in around the arc; the gap at the bottom shows the condition's icon above "back".
+5. Closing (Esc at the first ring, or clicking elsewhere) furls the ring into the center.
+6. Clicking quickly during an animation still lands on the new ring.
+7. With your OS set to reduce motion, the ring appears and changes instantly.
+
+## Which items are systems
+
+Open a weapon, gear, armor, or artifact item on a unit. Its **Settings** tab has an **ETU system** section with one setting, **Mount**.
 
 **Mount** decides whether the item is a system (it then appears under Hacked). "Auto" shows what the module detected. In order it checks:
 1. this setting (Hard Point, Sensor, Bay, or "Not a system");
@@ -65,6 +75,5 @@ Best practice for new items: give the unit tags named **Hard Point**, **Sensors*
 
 Checks:
 1. Hacked lists only mounted systems (and anything already hacked), with HP / SNS / BAY under each name. Knives, rations, and jackets don't appear.
-2. A Card Sheet linked pair (e.g. Silver Hail artifact + Silver Hail attack) appears once. Hacking it shows on both; the attack's sheet says its values live on the artifact.
-3. **Recoil rating**: leave blank for auto. Hard Point attacks show "Auto: 2/4/6 (weapon size)" for light/medium/heavy. Type 8 for Capital weapons, or 0 for none.
-4. **Signal**: pick Source or Reliant, then type and level. **Drain**: pick a pool, then the amount. These are stored now and used by the roll pre-fill in the next milestone.
+2. A Card Sheet linked pair (e.g. Silver Hail artifact + Silver Hail attack) appears once. Hacking it shows on both; the attack's sheet says its mount and Hack rating live on the artifact.
+3. Setting Mount to "Not a system" removes an item from Hacked, even if its name says "Bay".

@@ -88,9 +88,52 @@
 .etu-radial-readout strong { color: var(--etu-fg); font-size: 13px; }
 .etu-radial-readout span { color: var(--etu-muted); font-size: 12px; }
 
+/* Icons: stamped into each wedge as a faint texture behind the label. */
+.etu-slice-icon, .etu-gap-icon { color: var(--etu-fg); pointer-events: none; }
+.etu-slice-icon { opacity: 0.13; transition: opacity 0.12s; }
+.etu-wedge:hover .etu-slice-icon { opacity: 0.2; }
+.etu-slice-group ~ .etu-slice-icon, .etu-slice-more ~ .etu-slice-icon { color: var(--etu-accent); }
+.etu-gap-icon { opacity: 0.4; }
+
+/* Furl and unfurl. Every wedge turns about the ring's center (--cx/--cy, set on the layer). */
+.etu-wedge, .etu-ring-backdrop { transform-box: view-box; transform-origin: var(--cx) var(--cy); }
+.etu-leaving, .etu-leaving [data-act], .etu-radial.is-closing [data-act] { pointer-events: none; }
+.etu-radial.is-closing .etu-radial-crumb, .etu-radial.is-closing .etu-radial-readout { opacity: 0; transition: opacity 0.15s; }
+
 @media (prefers-reduced-motion: no-preference) {
-  .etu-ring-in { animation: etu-ring-in 0.14s ease-out; }
-  @keyframes etu-ring-in { from { opacity: 0; } to { opacity: 1; } }
+  /* Opening and drilling down: wedges unfurl outward from the center, one after another. */
+  .etu-enter-open .etu-wedge, .etu-enter-down .etu-wedge {
+    animation: etu-unfurl 0.24s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+    animation-delay: calc(var(--i) * 22ms);
+  }
+  .etu-enter-open .etu-ring-backdrop { animation: etu-grow 0.2s ease-out both; }
+  /* Drilling up: the parent ring settles back in from outside. */
+  .etu-enter-up .etu-wedge {
+    animation: etu-settle 0.24s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+    animation-delay: calc(var(--i) * 22ms);
+  }
+  /* Paging: wedges turn over to the next page. */
+  .etu-enter-page .etu-wedge { animation: etu-turn-in 0.2s ease-out both; animation-delay: calc(var(--i) * 15ms); }
+
+  /* Leaving rings. Down: the old ring opens outward and fades, as if diving through it. */
+  .etu-leave-down .etu-wedge { animation: etu-dive 0.18s ease-in both; }
+  /* Up and close: the ring furls back into the center. */
+  .etu-leave-up .etu-wedge, .etu-leave-close .etu-wedge {
+    animation: etu-furl 0.18s ease-in both;
+    animation-delay: calc(var(--i) * 10ms);
+  }
+  .etu-leave-page .etu-wedge { animation: etu-turn-out 0.15s ease-in both; }
+  .etu-leaving .etu-ring-backdrop, .etu-leave-close .etu-ring-backdrop { animation: etu-fade 0.18s ease-in both; }
+  .etu-leave-close .etu-center { animation: etu-fade 0.18s ease-in both; }
+
+  @keyframes etu-unfurl { from { opacity: 0; transform: rotate(-40deg) scale(0.45); } to { opacity: 1; transform: none; } }
+  @keyframes etu-settle { from { opacity: 0; transform: rotate(25deg) scale(1.3); } to { opacity: 1; transform: none; } }
+  @keyframes etu-furl { to { opacity: 0; transform: rotate(40deg) scale(0.45); } }
+  @keyframes etu-dive { to { opacity: 0; transform: scale(1.35); } }
+  @keyframes etu-turn-in { from { opacity: 0; transform: rotate(-22deg); } to { opacity: 1; transform: none; } }
+  @keyframes etu-turn-out { to { opacity: 0; transform: rotate(22deg); } }
+  @keyframes etu-grow { from { opacity: 0; transform: scale(0.4); } }
+  @keyframes etu-fade { to { opacity: 0; } }
 }
 
 /* Item sheet section (the system's light or dark sheet; no colors of our own). */
