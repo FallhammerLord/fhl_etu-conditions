@@ -35,6 +35,12 @@ export function documentFromUuid(uuid)
    catch { return null; }
 }
 
+/** @returns {number} Current canvas zoom (1 = 100%). */
+export function canvasZoom()
+{
+   return globalThis.canvas?.stage?.scale?.x || 1;
+}
+
 /** @returns {typeof PIXI.Text} Foundry's crisp text class, falling back to plain PIXI text. */
 function textClass()
 {
@@ -64,15 +70,15 @@ export function makePip(label, color, height)
    const Text = textClass();
    const text = new Text(label, {
       fontFamily: 'monospace',
-      fontSize: Math.round(height * 0.62),
-      fontWeight: '600',
+      fontSize: Math.round(height * 0.66),
+      fontWeight: '700',
       fill: colorNumber(color)
    });
    const padX = height * 0.35;
    const width = Math.max(height * 1.6, text.width + padX * 2);
    const bg = new PIXI.Graphics();
-   bg.lineStyle(Math.max(1, height * 0.08), colorNumber(color), 1);
-   bg.beginFill(0x0e1318, 0.85);
+   bg.lineStyle(Math.max(1.5, height * 0.1), colorNumber(color), 1);
+   bg.beginFill(0x0e1318, 0.92);
    bg.drawRoundedRect(0, 0, width, height, height * 0.25);
    bg.endFill();
    text.anchor?.set?.(0.5, 0.5);

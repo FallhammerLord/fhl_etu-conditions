@@ -7,7 +7,7 @@ import { MODULE_ID } from './constants.js';
 import { registerSettings } from './settings.js';
 import { registerStatusEffects } from './conditions.js';
 import { api } from './api.js';
-import { drawPips, positionPips, redrawActorPips, redrawAllPips } from './pips.js';
+import { drawPips, positionPips, redrawActorPips, redrawAllPips, repositionAllPips } from './pips.js';
 
 Hooks.once('init', () =>
 {
@@ -18,6 +18,7 @@ Hooks.once('init', () =>
 
 Hooks.on('drawToken', (token) => drawPips(token));
 Hooks.on('refreshToken', (token) => positionPips(token));
+Hooks.on('canvasPan', () => repositionAllPips());
 
 /**
  * @param {foundry.abstract.Document} doc - An ActiveEffect or Item.
