@@ -117,7 +117,7 @@ The GM adds conditions in Module Settings: name, kind (on/off or a level range),
 - Every label, value, pip, and filled gauge cell is checked at WCAG AA (4.5:1) in both palettes by `npm run contrast`. Filled cells pick light or dark text per fill.
 
 **Behavior**
-- Root ring: Thermal, Signal (Target Lock, Jammed), Recoil, Hacked (one gauge per system), Token (Target, Combat, Hide/Reveal, Foundry HUD), Clear all.
+- Root ring: Thermal, Signal (Target Lock, Jammed), Recoil, Hacked (one gauge per system), Clear all, Token (Target, Combat, Hide/Reveal, Foundry HUD).
 - At most 8 slices per ring; longer lists page with "More".
 - Gauge cells set a level on click; the wheel nudges ±1; keys 1–9 pick slices; ← → step a gauge.
 - Changes apply to every selected token.

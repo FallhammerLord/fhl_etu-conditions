@@ -41,7 +41,7 @@ Optional check: `canvas.tokens.controlled[0].actor.statuses` should list IDs lik
 
 Right-click a token you own.
 
-1. A ring opens around the token: Thermal, Signal, Recoil, Hacked, Token, Clear all. Values show on the slices (e.g. HOT, 4).
+1. A ring opens around the token: Thermal, Signal, Recoil, Hacked, Clear all, Token. Values show on the slices (e.g. HOT, 4).
 2. Click Signal, then Target Lock: a gauge ring of 0–10. Click a cell to set it; the pip above the token updates.
 3. Mouse wheel over a gauge, or over Thermal/Recoil on the first ring, nudges ±1. The canvas should not zoom while you do this.
 4. Esc, right-click on the ring, or clicking the token in the middle goes back one ring; at the first ring it closes. Clicking elsewhere closes it.

@@ -360,6 +360,8 @@ class RadialMenu
                   };
                })
             },
+            { key: 'clear', label: t('menu.clearAll'), type: 'action', stay: true, icon: 'clear',
+              run: () => Promise.all(this.targets().map((a) => clearConditions(a))) },
             {
                key: 'token', label: t('menu.token'), type: 'group', icon: 'token',
                children: [
@@ -372,9 +374,7 @@ class RadialMenu
                   { key: 'core', label: t('menu.foundryHud'), type: 'action',
                     icon: 'hud', run: () => { this.close(); openCoreHud(token); } }
                ]
-            },
-            { key: 'clear', label: t('menu.clearAll'), type: 'action', stay: true, icon: 'clear',
-              run: () => Promise.all(this.targets().map((a) => clearConditions(a))) }
+            }
          ]
       };
    }

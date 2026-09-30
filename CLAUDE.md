@@ -4,7 +4,7 @@ Read this first in any new session. The design, the conditions, and open decisio
 
 ## What this is
 
-A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.5.0.
+A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked) and lets players set them from a radial token menu, with pips above tokens. Players handle their own conditions; the module does not interpret rolls. Plain ES modules, no build step. Version 0.5.1.
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
