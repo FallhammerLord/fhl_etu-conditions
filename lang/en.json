@@ -75,7 +75,7 @@
       "targetLockOff": "Signal attacks get no easing",
       "jammed": "Signal-reliant tasks hindered by {level}; signals of level {level} or lower fail",
       "jammedOff": "Signals work normally",
-      "recoil": "Hard Point attacks hindered by {level} until the end of this unit's next turn",
+      "recoil": "Hard Point attacks hindered by {level}. Each shot adds; Recoil Control subtracts; clear after a round without firing",
       "recoilOff": "No kickback",
       "hacked": "Reactor test against {level} before using {name}",
       "hackedOff": "{name} is not compromised"
@@ -132,7 +132,8 @@
     "warn": {
       "notOwner": "You don't own {name}, so you can't change its conditions.",
       "gmOnly": "Only the GM can change this condition. The GM can allow it in Module Settings.",
-      "noItem": "{name} has no system called \"{item}\"."
+      "noItem": "{name} has no system called \"{item}\".",
+      "saveTimeout": "A change to {name} got no answer from the server (connection lost?). It may not have saved; check it and try again."
     }
   }
 }

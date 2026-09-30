@@ -56,10 +56,22 @@ await test('signal through jam', () =>
    assert.deepEqual(rules.signalThroughJam(4, 'etheric', 8), { works: false, effective: 0 });
 });
 
-await test('recoil takes the highest rating', () =>
+await test('recoil stacks per shot and Recoil Control subtracts its result', () =>
 {
-   assert.equal(rules.combinedRecoil([]), 0);
-   assert.equal(rules.combinedRecoil([2, 6, 4]), 6);
+   // The table's example: 6, control 3, +3, control 2, +1, control 0.
+   let r = rules.stackRecoil(0, 6);
+   assert.equal(r, 6);
+   r = rules.recoilAfterControl(r, 3);
+   assert.equal(r, 3);
+   r = rules.stackRecoil(r, 3);
+   assert.equal(r, 6);
+   r = rules.recoilAfterControl(r, 2);
+   assert.equal(r, 4);
+   r = rules.stackRecoil(r, 1);
+   assert.equal(r, 5);
+   assert.equal(rules.recoilAfterControl(r, 0), 5);
+   assert.equal(rules.recoilAfterControl(2, 9), 0, 'never below 0');
+   assert.equal(rules.stackRecoil(8, 6, 10), 10, 'capped by the condition range');
 });
 
 await test('Drain and Deep Well', () =>
@@ -339,6 +351,24 @@ await test('player permissions follow the settings', async () =>
    a.isOwner = false;
    assert.equal(await store.setLevel(a, 'temperature', 2), null, 'non-owners are refused');
    game.user.isGM = true;
+});
+
+await test('a save that never answers is abandoned, and later saves still work', async () =>
+{
+   const a = mockActor('T');
+   const realCreate = a.createEmbeddedDocuments;
+   a.createEmbeddedDocuments = () => new Promise(() => {});   // a dropped connection: no answer, ever
+   store.setWriteTimeout(60);
+   warnings.length = 0;
+   try
+   {
+      assert.equal(await store.setLevel(a, 'recoil', 3), null, 'the stuck save resolves to null');
+      assert.equal(warnings.length, 1, 'the player is told');
+      a.createEmbeddedDocuments = realCreate;
+      assert.equal(await store.setLevel(a, 'recoil', 4), 4, 'the next save is not stuck behind it');
+      assert.equal(store.getLevel(a, 'recoil'), 4);
+   }
+   finally { store.setWriteTimeout(8000); }
 });
 
 // ---- Right-click routing and strings ----------------------------------------------------

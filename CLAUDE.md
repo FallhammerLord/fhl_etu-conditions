@@ -8,7 +8,9 @@ A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a 
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
 
-Status: milestones 1–3 written (v0.2.4). Next: milestone 4, roll dialog pre-fill.
+Status (v0.3.1): milestones 1–4 written; see `docs/SCOPE.md` §10 for the revised plan (Draft 2). Next: GM lists, then the weapon model (properties, rules, effects), then roll integration.
+
+Direction from play-testing (2026-09-30): the roll is the main path and the radial menu is for cleanup. Automate only what it can get right; prompt for anything needing judgment (hits, clearing Recoil). A wrong automatic value is a correction players make every round.
 
 Verified in Foundry by the user: pips on PC and unlinked NPC tokens; macro API; radial menu opens on right-click, all rings click through; Shift + right-click opens Foundry's HUD; right-drag panning still works.
 
@@ -55,6 +57,7 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 - Foundry reads `module.json` only when a world launches. New `styles`, `esmodules`, or `languages` entries need a world relaunch, not F5. `ensureStylesheet` covers the stylesheet.
 - A right-click we handle must still stop propagation at the token, as core does, or the canvas starts a right-drag pan that never ends.
 - Don't draw an overlay under a held mouse button: it steals the release from the canvas. The ring opens after the right-button release.
+- A write sent while the connection drops may never answer. The per-actor queue gives each write a time limit and resets on reconnect; without that, every later write for the unit hung until a reload.
 
 ## Map
 

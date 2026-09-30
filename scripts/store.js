@@ -15,17 +15,57 @@ import { hackOf, hostOf, systemGroup } from './items.js';
 const queues = new Map();
 
 /**
- * Runs `task` after any earlier write for the same actor has finished.
+ * How long one write may wait for the server (ms). A write lost to a dropped connection never
+ * answers; without a limit it would hold up every later write for that unit until a reload.
+ */
+let writeTimeout = 8000;
+
+/** @param {number} ms - Change the write time limit (tests use a short one). */
+export function setWriteTimeout(ms)
+{
+   writeTimeout = ms;
+}
+
+/** Forget every pending write, e.g. after the connection comes back. Later writes start fresh. */
+export function resetQueues()
+{
+   queues.clear();
+}
+
+class WriteTimeout extends Error {}
+
+/**
+ * @param {Promise<*>} promise - A write.
+ * @returns {Promise<*>} The write, or a WriteTimeout rejection after the time limit.
+ */
+function withTimeout(promise)
+{
+   let timer;
+   const limit = new Promise((_, reject) => { timer = setTimeout(() => reject(new WriteTimeout()), writeTimeout); });
+   return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Runs `task` after any earlier write for the same actor has finished (or timed out).
+ * A timed-out task resolves to null with a warning, so callers and later writes carry on.
  *
  * @param {Actor} actor - The actor being written.
  * @param {Function} task - Async work.
- * @returns {Promise<*>} The task's result.
+ * @returns {Promise<*>} The task's result, or null if it timed out.
  */
 function enqueue(actor, task)
 {
    const key = actor.uuid;
    const previous = queues.get(key) ?? Promise.resolve();
-   const next = previous.catch(() => {}).then(task);
+   const next = previous
+      .catch(() => {})
+      .then(() => withTimeout(Promise.resolve().then(task)))
+      .catch((err) =>
+      {
+         if (!(err instanceof WriteTimeout)) { throw err; }
+         ui.notifications.warn(game.i18n.format(`${MODULE_ID}.warn.saveTimeout`, { name: actor.name }));
+         return null;
+      });
    queues.set(key, next);
    next.finally(() => { if (queues.get(key) === next) { queues.delete(key); } }).catch(() => {});
    return next;

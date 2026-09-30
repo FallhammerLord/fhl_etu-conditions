@@ -54,14 +54,28 @@ export function signalThroughJam(level, type, jammed)
 }
 
 /**
- * Recoil when several Recoil weapons fire in one round: the highest rating, not the sum.
+ * Recoil after firing: each shot's Recoil adds to what the unit already carries.
  *
- * @param {number[]} ratings - Ratings of weapons fired this round.
- * @returns {number} Recoil rating that applies.
+ * @param {number} current - The unit's Recoil before the shot.
+ * @param {number} shot - This shot's Recoil.
+ * @param {number} [max=Infinity] - Cap from the condition's range.
+ * @returns {number} Recoil after the shot.
  */
-export function combinedRecoil(ratings)
+export function stackRecoil(current, shot, max = Infinity)
 {
-   return ratings.length ? Math.max(0, ...ratings) : 0;
+   return Math.min(max, Math.max(0, current) + Math.max(0, shot));
+}
+
+/**
+ * Recoil after a Recoil Control test: the test's result comes off the current Recoil.
+ *
+ * @param {number} current - The unit's Recoil.
+ * @param {number} result - The Recoil Control test's result.
+ * @returns {number} Recoil left, never below 0.
+ */
+export function recoilAfterControl(current, result)
+{
+   return Math.max(0, current - Math.max(0, result));
 }
 
 /**

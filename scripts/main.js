@@ -9,7 +9,8 @@ import { registerStatusEffects } from './conditions.js';
 import { api } from './api.js';
 import { drawPips, positionPips, redrawAllPips, repositionAllPips } from './pips.js';
 import { radialMenu } from './radial.js';
-import { activeTokens, ensureStylesheet, installTokenRightClick } from './compat.js';
+import { activeTokens, ensureStylesheet, installTokenRightClick, onReconnect } from './compat.js';
+import { resetQueues } from './store.js';
 import { onRenderItemSheet } from './item-sheet.js';
 
 Hooks.once('init', () =>
@@ -20,7 +21,17 @@ Hooks.once('init', () =>
    game.modules.get(MODULE_ID).api = api;
 });
 
-Hooks.once('ready', () => ensureStylesheet(MODULE_ID, 'styles/etu.css'));
+Hooks.once('ready', () =>
+{
+   ensureStylesheet(MODULE_ID, 'styles/etu.css');
+   // A dropped connection can leave a save unanswered; start fresh once it's back.
+   onReconnect(() =>
+   {
+      resetQueues();
+      redrawAllPips();
+      radialMenu.refresh();
+   });
+});
 Hooks.on('renderCypherItemSheet', onRenderItemSheet);
 
 Hooks.on('drawToken', (token) => drawPips(token));

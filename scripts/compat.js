@@ -89,6 +89,24 @@ export function makePip(label, color, height)
 }
 
 /**
+ * Runs `fn` whenever the client's connection to the server comes back after a drop.
+ *
+ * @param {Function} fn - Callback.
+ */
+export function onReconnect(fn)
+{
+   const socket = game.socket;
+   if (typeof socket?.on !== 'function') { return; }
+   let connected = socket.connected !== false;
+   socket.on('disconnect', () => { connected = false; });
+   socket.on('connect', () =>
+   {
+      if (!connected) { fn(); }
+      connected = true;
+   });
+}
+
+/**
  * Adds the module's stylesheet if Foundry didn't load it. Foundry reads module.json only when a world
  * launches, so a stylesheet added in an update is missing until then; without it the radial menu
  * renders off-screen.
