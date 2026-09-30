@@ -51,3 +51,20 @@ Right-click a token you own.
 8. Hacked lists the unit's attacks, equipment, armor, and artifacts. More than seven adds a "More" slice that pages.
 9. Pan and zoom with the ring open: it follows the token and stays the same size.
 10. As a player: GM-only conditions look dimmed and show a warning when clicked.
+
+## Item tags: which items are systems
+
+Open a weapon or gear item on a unit. Its **Settings** tab has an **ETU system** section.
+
+**Mount** decides whether the item is a system (it then appears under Hacked). "Auto" shows what the module detected. In order it checks:
+1. this setting (Hard Point, Sensor, Bay, or "Not a system");
+2. a Cypher System tag on the item named Hard Point, Sensor(s), or Bay;
+3. the item's own name (e.g. "Missile Bay", "Sensor Suite").
+
+Best practice for new items: give the unit tags named **Hard Point**, **Sensors**, and **Bay**, tag each system, and **keep those tags switched on**. The Cypher System archives tagged items whose tags are all off whenever any tag is toggled. This module only reads tags; it never toggles them.
+
+Checks:
+1. Hacked lists only mounted systems (and anything already hacked), with HP / SNS / BAY under each name. Knives, rations, and jackets don't appear.
+2. A Card Sheet linked pair (e.g. Silver Hail artifact + Silver Hail attack) appears once. Hacking it shows on both; the attack's sheet says its values live on the artifact.
+3. **Recoil rating**: leave blank for auto. Hard Point attacks show "Auto: 2/4/6 (weapon size)" for light/medium/heavy. Type 8 for Capital weapons, or 0 for none.
+4. **Signal**: pick Source or Reliant, then type and level. **Drain**: pick a pool, then the amount. These are stored now and used by the roll pre-fill in the next milestone.

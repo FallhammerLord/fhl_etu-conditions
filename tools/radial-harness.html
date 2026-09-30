@@ -43,7 +43,7 @@ class Effect
 }
 class Item
 {
-   constructor(parent, name, type, hack = 0) { Object.assign(this, { id: `i${nextId++}`, parent, name, type, flags: hack ? { [MOD]: { hack } } : {} }); }
+   constructor(parent, name, type, flags = {}, id = `i${nextId++}`, system = {}) { Object.assign(this, { id, parent, name, type, flags, system }); }
    getFlag(s, k) { return this.flags[s]?.[k]; }
    async setFlag(s, k, v) { (this.flags[s] ??= {})[k] = v; }
    async unsetFlag(s, k) { delete this.flags[s]?.[k]; }
@@ -53,7 +53,20 @@ const actor = {
    async createEmbeddedDocuments(_t, list) { const m = list.map((d) => new Effect(actor, d)); actor.effects.push(...m); return m; },
    async deleteEmbeddedDocuments(_t, ids) { actor.effects = actor.effects.filter((e) => !ids.includes(e.id)); }
 };
-actor.items = [new Item(actor, 'Hard Point A', 'attack'), new Item(actor, 'Hard Point B', 'attack'), new Item(actor, 'Missile Bay', 'attack', 3), new Item(actor, 'Sensor Suite', 'equipment')];
+// A realistic unit: Cypher tags, a Card Sheet linked pair (artifact + attack), and gear that is not a system.
+actor.items = [
+   new Item(actor, 'Hard Point', 'tag', {}, 'tagHP'),
+   new Item(actor, 'Rail Cannon', 'attack', { cyphersystem: { tags: ['tagHP'] } }, 'rail', { basic: { type: 'medium weapon' } }),
+   new Item(actor, 'Silver Hail', 'artifact', { cyphersystem: { tags: ['tagHP'] } }, 'hailArt'),
+   new Item(actor, 'Silver Hail', 'attack', { 'cypher-card-sheet': { linkedArtifact: 'hailArt' } }, 'hailAtk', { basic: { type: 'heavy weapon' } }),
+   new Item(actor, 'Missile Bay', 'equipment', { [MOD]: { hack: 3 } }),
+   new Item(actor, 'Long-Range Sensor Array', 'equipment'),
+   new Item(actor, 'Combat Knife', 'attack', {}, 'knife', { basic: { type: 'light weapon' } }),
+   new Item(actor, 'Field Rations', 'equipment'),
+   new Item(actor, 'Pilot Jacket', 'armor')
+];
+actor.items.get = (id) => actor.items.find((i) => i.id === id);
+actor.items.getName = (n) => actor.items.find((i) => i.name === n);
 
 const el = document.getElementById('tok');
 const token = {

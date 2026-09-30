@@ -45,7 +45,7 @@
       "foundryHud": "Foundry HUD",
       "back": "back",
       "hackedCount": "{count} sys",
-      "noSystems": "No weapons or gear to hack",
+      "noSystems": "No Hard Points, Sensors, or Bays yet",
       "selected": "{count} selected",
       "wheelHint": "wheel ±1",
       "runsNow": "Runs now",
@@ -79,6 +79,55 @@
       "recoilOff": "No kickback",
       "hacked": "Reactor test against {level} before using {name}",
       "hackedOff": "{name} is not compromised"
+    },
+    "mount": {
+      "hardpoint": "Hard Point",
+      "sensor": "Sensor",
+      "bay": "Bay",
+      "none": "Not a system",
+      "short": {
+        "hardpoint": "HP",
+        "sensor": "SNS",
+        "bay": "BAY"
+      }
+    },
+    "source": {
+      "tag": "tag",
+      "name": "name",
+      "flag": "set here",
+      "none": "none"
+    },
+    "role": {
+      "none": "None",
+      "source": "Source",
+      "reliant": "Reliant"
+    },
+    "signal": {
+      "electromagnetic": "Electromagnetic",
+      "liminal": "Liminal (+2)",
+      "etheric": "Etheric (+4)"
+    },
+    "pool": {
+      "none": "No Drain",
+      "frame": "Frame",
+      "reactor": "Reactor",
+      "strain": "Strain"
+    },
+    "sheet": {
+      "title": "ETU system (ETU Conditions)",
+      "mount": "Mount",
+      "autoFrom": "Auto: {value} (from {source})",
+      "autoNone": "Auto: not a system",
+      "recoil": "Recoil rating",
+      "recoilAuto": "Auto: {rating} (weapon size)",
+      "recoilNone": "Auto: none",
+      "signalRole": "Signal",
+      "signalType": "Signal type",
+      "signalLevel": "Signal level",
+      "signalLevelHint": "From item card",
+      "drainPool": "Drain",
+      "drainAmount": "Drain amount",
+      "linkedNote": "Linked to the artifact {host}. This system's ETU values and Hack rating live on the artifact."
     },
     "warn": {
       "notOwner": "You don't own {name}, so you can't change its conditions.",

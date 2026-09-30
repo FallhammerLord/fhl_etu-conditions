@@ -12,7 +12,7 @@ Status: milestones 1–3 written (v0.2.4). Next: milestone 4, roll dialog pre-fi
 
 Verified in Foundry by the user: pips on PC and unlinked NPC tokens; macro API; radial menu opens on right-click, all rings click through; Shift + right-click opens Foundry's HUD; right-drag panning still works.
 
-Known issue: the Hacked ring is crowded (every attack/equipment/armor/artifact is listed; long names wrap). Planned fix: item tags so only Hard Points, Sensors, and Bays appear.
+Item tags (v0.3.0, not yet tested in Foundry): mount from our flag → Cypher tag name → item name; Recoil from flag → weapon size on Hard Points; Signal and Drain flags; a Cypher Card Sheet linked pair (`flags.cypher-card-sheet.linkedArtifact`) is one system hosted on the artifact, which holds the Hack rating. Hacked lists only systems.
 
 ## Working with the user
 
@@ -36,7 +36,8 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 - **Version-sensitive Foundry and Cypher System calls go only in `scripts/compat.js`.** That includes PIXI drawing.
 - **Right-click:** extend whatever `CONFIG.Token.objectClass` holds at `init` (the Cypher System sets `CypherSystemToken`). Never replace it outright. Shift + right-click calls `super` to open Foundry's HUD.
 - **Pools:** Frame = Might, Reactor = Speed, Strain = Intellect in the system's data.
-- **Storage:** one Active Effect per unit condition, found by status ID (`etu-temperature`, `etu-target-lock`, `etu-jammed`, `etu-recoil`), level in `flags.fhl-etu-conditions.level`, `showIcon` NEVER (our pips show levels). Hacked is `flags.fhl-etu-conditions.hack` on the item.
+- **Storage:** one Active Effect per unit condition, found by status ID (`etu-temperature`, `etu-target-lock`, `etu-jammed`, `etu-recoil`), level in `flags.fhl-etu-conditions.level`, `showIcon` NEVER (our pips show levels). Hacked is `flags.fhl-etu-conditions.hack` on the system's host item. Item tags: `mount`, `recoil`, `signalRole`, `signalType`, `signalLevel`, `drainPool`, `drainAmount` in the same scope.
+- **Cypher tags are read-only to us.** Toggling a tag archives items; never toggle one.
 - **All writes for one actor go through the queue in `store.js`,** read and write in one step, so rapid nudges can't race.
 - **Pure rules math lives in `scripts/rules.js`** with no Foundry calls, tested by `npm run rules`.
 - **Visual modules are optional** and sit behind an adapter that fails quietly.
@@ -66,6 +67,8 @@ npm run preview # real radial menu in Chromium with Foundry mocked; screenshots 
 | `scripts/api.js` | public macro API (`game.modules.get(id).api`) |
 | `scripts/rules.js` | pure rules math: temperature cost, lock vs jam, signal cutoff, Drain |
 | `scripts/pips.js` | condition pips drawn above tokens (min 20 screen px tall at any zoom) |
+| `scripts/items.js` | item systems: mount, Recoil, Signal, Drain, Hack host, Card Sheet links |
+| `scripts/item-sheet.js` | "ETU system" section in the Cypher item sheet's Settings tab |
 | `scripts/radial.js` | radial token menu: rings, gauges, keys, wheel, paging, readout |
 | `styles/etu.css` | radial menu styles, colors through `--etu-*` tokens |
 | `scripts/settings.js` | player edit rights per condition, pip toggle |

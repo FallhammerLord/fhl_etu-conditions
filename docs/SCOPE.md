@@ -101,6 +101,14 @@ A level on the unit.
 ### 3.6 Hacked
 Belongs to one system (a Hard Point, Sensor, or Bay) and carries a Hack rating. Using a hacked system first takes a Reactor test against the rating. On a failure, the system doesn't work.
 
+An artifact and the items linked to it by the Cypher Card Sheet are one system: hacking the artifact hacks every linked card (decided 2026-09-30).
+
+### 3.8 Which items are systems (item tags)
+- **Mount** (Hard Point, Sensor, Bay) comes from, in order: the item's ETU setting; a Cypher System tag named Hard Point, Sensor(s), or Bay; the item's name. Cypher tags are read, never toggled. Best practice: keep mount tags switched on, because toggling any tag archives items whose tags are all off.
+- **Recoil rating:** the item's ETU setting; else, on a Hard Point attack, its Cypher weapon size (light 2, medium 4, heavy 6). Capital weapons set 8 by hand.
+- **Signal** (Source/Reliant, type, level) and **Drain** (pool, amount) are ETU settings on the item.
+- A linked pair reads all of these from the whole pair, artifact first.
+
 ### 3.7 Drain and Deep Well
 - **Drain N:** a feature with Drain N takes N points from its pool. Edge doesn't reduce it.
 - **Deep Well:** an optional advancement tied to one pool. While that pool is above 90% of its maximum, Drain costs from it are 1 lower. Each extra pick for the same pool widens the threshold by 10% (90% → 80% → …).

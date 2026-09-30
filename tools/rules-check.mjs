@@ -122,15 +122,20 @@ class MockEffect
 
 class MockItem
 {
-   constructor(name) { Object.assign(this, { id: `i${nextId++}`, name, flags: {} }); }
+   /** @param {string|object} spec - A name, or { name, type, flags, system, id }. */
+   constructor(spec)
+   {
+      const s = typeof spec === 'string' ? { name: spec } : spec;
+      Object.assign(this, { id: s.id ?? `i${nextId++}`, name: s.name, type: s.type ?? 'equipment', flags: structuredClone(s.flags ?? {}), system: s.system ?? {} });
+   }
    getFlag(scope, key) { return this.flags[scope]?.[key]; }
    async setFlag(scope, key, v) { await latency(); (this.flags[scope] ??= {})[key] = v; }
    async unsetFlag(scope, key) { await latency(); delete this.flags[scope]?.[key]; }
 }
 
-function mockActor(name, itemNames = [])
+function mockActor(name, itemSpecs = [])
 {
-   const items = itemNames.map((n) => new MockItem(n));
+   const items = itemSpecs.map((n) => new MockItem(n));
    items.get = (id) => items.find((i) => i.id === id);
    items.getName = (n) => items.find((i) => i.name === n);
    const actor = {
@@ -148,6 +153,7 @@ function mockActor(name, itemNames = [])
          actor.effects = actor.effects.filter((e) => !ids.includes(e.id));
       }
    };
+   for (const item of items) { item.parent = actor; }
    return actor;
 }
 
@@ -206,6 +212,106 @@ await test('hack ratings live on items', async () =>
    assert.equal(await store.setHack(a, 'Nope', 3), null, 'unknown system is refused');
    await store.setHack(a, a.items[1].id, 0);
    assert.equal(store.getHacked(a).length, 0);
+});
+
+// ---- Item systems: mounts, links, Recoil ---------------------------------------------------
+
+const items = await import('../scripts/items.js');
+const CS = 'cypher-card-sheet';
+
+/** A unit with Cypher tags, a Card Sheet linked pair, and plain gear. */
+function etuUnit(name)
+{
+   return mockActor(name, [
+      { id: 'tagHP', name: 'Hard Point', type: 'tag' },
+      { id: 'tagSNS', name: 'Sensors', type: 'tag' },
+      { id: 'rail', name: 'Rail Cannon', type: 'attack', system: { basic: { type: 'medium weapon' } }, flags: { cyphersystem: { tags: ['tagHP'] } } },
+      { id: 'knife', name: 'Combat Knife', type: 'attack', system: { basic: { type: 'light weapon' } } },
+      { id: 'hailArt', name: 'Silver Hail', type: 'artifact', flags: { cyphersystem: { tags: ['tagHP'] } } },
+      { id: 'hailAtk', name: 'Silver Hail', type: 'attack', system: { basic: { type: 'heavy weapon' } }, flags: { [CS]: { linkedArtifact: 'hailArt' } } },
+      { id: 'suite', name: 'Sensor Suite', type: 'equipment' },
+      { id: 'bay', name: 'Missile Bay', type: 'equipment', flags: { [MOD]: { signalRole: 'reliant', signalLevel: 5 } } },
+      { id: 'cloak', name: 'Cloak Field', type: 'equipment', flags: { [MOD]: { mount: 'none' } } },
+      { id: 'flare', name: 'Flare Pod', type: 'equipment', flags: { [MOD]: { mount: 'bay', drainPool: 'reactor', drainAmount: 2 } } }
+   ]);
+}
+const byId = (a, id) => a.items.get(id);
+
+await test('mount comes from flag, then Cypher tag, then name', () =>
+{
+   const a = etuUnit('M');
+   assert.deepEqual(items.mountInfo(byId(a, 'rail')), { mount: 'hardpoint', source: 'tag' });
+   assert.deepEqual(items.mountInfo(byId(a, 'suite')), { mount: 'sensor', source: 'name' });
+   assert.deepEqual(items.mountInfo(byId(a, 'bay')), { mount: 'bay', source: 'name' });
+   assert.deepEqual(items.mountInfo(byId(a, 'flare')), { mount: 'bay', source: 'flag' });
+   assert.deepEqual(items.mountInfo(byId(a, 'cloak')), { mount: null, source: 'flag' }, '"Not a system" overrides');
+   assert.equal(items.mountOf(byId(a, 'knife')), null);
+   assert.deepEqual(items.mountInfo(byId(a, 'flare'), { useFlag: false }), { mount: null, source: 'none' }, 'auto preview ignores the manual setting');
+});
+
+await test('a Card Sheet linked attack is the same system as its artifact', () =>
+{
+   const a = etuUnit('L');
+   assert.equal(items.hostOf(byId(a, 'hailAtk')), byId(a, 'hailArt'));
+   assert.equal(items.hostOf(byId(a, 'hailArt')), byId(a, 'hailArt'));
+   assert.deepEqual(items.systemGroup(byId(a, 'hailArt')).map((i) => i.id), ['hailArt', 'hailAtk']);
+   assert.equal(items.mountOf(byId(a, 'hailAtk')), 'hardpoint', 'the attack inherits the artifact\'s tag');
+   const names = items.unitSystems(a).map((i) => i.id);
+   assert.deepEqual(names, ['rail', 'hailArt', 'suite', 'bay', 'flare'], 'one entry per system; knife and cloak excluded');
+});
+
+await test('Recoil: set value, else weapon size on Hard Points, else none', async () =>
+{
+   const a = etuUnit('R');
+   assert.deepEqual(items.recoilInfo(byId(a, 'rail')), { rating: 4, source: 'size' });
+   assert.deepEqual(items.recoilInfo(byId(a, 'hailArt')), { rating: 6, source: 'size' }, 'artifact takes the linked attack\'s size');
+   assert.deepEqual(items.recoilInfo(byId(a, 'knife')), { rating: 0, source: 'none' }, 'not a Hard Point');
+   byId(a, 'rail').flags[MOD] = { recoil: 8 };
+   assert.deepEqual(items.recoilInfo(byId(a, 'rail')), { rating: 8, source: 'flag' }, 'Capital override');
+   assert.deepEqual(items.recoilInfo(byId(a, 'rail'), { useFlag: false }), { rating: 4, source: 'size' });
+   byId(a, 'rail').flags[MOD] = { recoil: null };
+   assert.equal(items.recoilInfo(byId(a, 'rail')).rating, 4, 'blank field means auto');
+});
+
+await test('Signal and Drain read from the system', () =>
+{
+   const a = etuUnit('S');
+   assert.deepEqual(items.signalOf(byId(a, 'bay')), { role: 'reliant', type: 'electromagnetic', level: 5 });
+   assert.deepEqual(items.signalOf(byId(a, 'rail')), { role: 'none', type: 'electromagnetic', level: null });
+   assert.deepEqual(items.drainOf(byId(a, 'flare')), { pool: 'reactor', amount: 2 });
+   assert.equal(items.drainOf(byId(a, 'rail')), null);
+});
+
+await test('hacking either half of a linked pair hacks both, counted once', async () =>
+{
+   const a = etuUnit('H');
+   assert.equal(await store.setHack(a, 'hailAtk', 3), 3);
+   assert.equal(byId(a, 'hailArt').flags[MOD].hack, 3, 'stored on the artifact');
+   assert.equal(items.hackOf(byId(a, 'hailAtk')), 3);
+   assert.deepEqual(store.getHacked(a).map((h) => [h.id, h.rating]), [['hailArt', 3]]);
+   // A rating left on the attack from before it was linked is cleared on the next write.
+   byId(a, 'hailAtk').flags[MOD] = { hack: 5 };
+   assert.equal(items.hackOf(byId(a, 'hailArt')), 5, 'old rating still counts until rewritten');
+   assert.equal(store.getHacked(a).length, 1);
+   await store.setHack(a, 'hailArt', 0);
+   assert.equal(items.hackOf(byId(a, 'hailAtk')), 0);
+   assert.equal(store.getHacked(a).length, 0);
+});
+
+await test('item sheet section renders per type and defers linked items to the artifact', async () =>
+{
+   const { etuFieldsHtml } = await import('../scripts/item-sheet.js');
+   const a = etuUnit('I');
+   const rail = etuFieldsHtml(byId(a, 'rail'), true);
+   assert.ok(rail.includes('name="flags.fhl-etu-conditions.mount"'));
+   assert.ok(rail.includes('name="flags.fhl-etu-conditions.recoil"'));
+   assert.ok(rail.includes('sheet.recoilAuto'), 'shows the automatic Recoil as the placeholder');
+   assert.ok(!rail.includes('signalType'), 'signal type appears only once a role is chosen');
+   const bay = etuFieldsHtml(byId(a, 'bay'), false);
+   assert.ok(bay.includes('signalType') && bay.includes(' disabled'), 'read-only sheet disables inputs');
+   const linked = etuFieldsHtml(byId(a, 'hailAtk'), true);
+   assert.ok(linked.includes('sheet.linkedNote') && !linked.includes('<select'), 'linked attack shows a note only');
+   assert.equal(etuFieldsHtml(new MockItem({ name: 'x', type: 'skill' }), true), '', 'skills get no section');
 });
 
 await test('clear removes everything', async () =>

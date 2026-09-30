@@ -9,13 +9,14 @@ import { CONDITIONS, temperatureStep } from './conditions.js';
 import { adjustLevel, clearConditions, getLevel, setHack, setLevel } from './store.js';
 import { canEdit } from './settings.js';
 import { resolveActors } from './api.js';
+import { hackOf, mountOf, unitSystems } from './items.js';
 import {
    closeCoreHud, controlToken, controlledTokens, openCoreHud, tokenScreenGeometry,
    toggleCombat, toggleHidden, toggleTarget
 } from './compat.js';
 
 const NS = 'http://www.w3.org/2000/svg';
-const RING_WIDTH = 70;
+const RING_WIDTH = 84;
 const MIN_INNER = 46;
 const MAX_INNER = 150;
 const MAX_SLICES = 8;
@@ -27,9 +28,6 @@ const PAN_THRESHOLD = 6;
 
 /** Wait after the right-button release before drawing the ring (ms). */
 const OPEN_DELAY = 60;
-
-/** Item types offered under Hacked (weapons, gear, and anything already hacked). */
-const HACKABLE_TYPES = new Set(['attack', 'equipment', 'armor', 'artifact']);
 
 /** Console trace, on when `CONFIG.debug.etuConditions = true`. */
 function debug(...args)
@@ -62,6 +60,32 @@ function sector(cx, cy, r0, r1, a0, a1)
    const [x3, y3] = polar(cx, cy, r0, a1);
    const [x4, y4] = polar(cx, cy, r0, a0);
    return `M${x1} ${y1}A${r1} ${r1} 0 ${large} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${large} 0 ${x4} ${y4}Z`;
+}
+
+/** Longest slice label line, in characters, before it is shortened. */
+const LABEL_LINE = 12;
+
+/**
+ * Splits a slice label into at most two lines that fit a slice, shortening with "…" when needed.
+ *
+ * @param {string} label - Full label.
+ * @returns {string[]} One or two lines.
+ */
+export function labelLines(label)
+{
+   const clip = (s) => (s.length > LABEL_LINE ? `${s.slice(0, LABEL_LINE - 1).trimEnd()}…` : s);
+   if (label.length <= LABEL_LINE) { return [label]; }
+   const words = label.split(/\s+/);
+   if (words.length === 1) { return [clip(label)]; }
+   // Break where the two lines come out most even.
+   let best = 1;
+   let bestDiff = Infinity;
+   for (let i = 1; i < words.length; i++)
+   {
+      const diff = Math.abs(words.slice(0, i).join(' ').length - words.slice(i).join(' ').length);
+      if (diff < bestDiff) { best = i; bestDiff = diff; }
+   }
+   return [clip(words.slice(0, best).join(' ')), clip(words.slice(best).join(' '))];
 }
 
 /** Creates an SVG element with attributes and optional text. */
@@ -119,7 +143,7 @@ function hackGauge(item)
 {
    const levels = [];
    for (let v = 0; v <= 10; v++) { levels.push(v); }
-   const read = () => Number(item.getFlag(MODULE_ID, 'hack') ?? 0);
+   const read = () => hackOf(item);
    return {
       key: 'hacked',
       title: `${t('condition.hacked')}: ${item.name}`,
@@ -253,8 +277,8 @@ class RadialMenu
       const token = this.token;
       const actor = token.actor;
       const g = (key) => ({ key, label: t(`condition.${key}`), type: 'gauge', gauge: conditionGauge(key) });
-      const systems = actor.items.filter((i) => HACKABLE_TYPES.has(i.type) || Number(i.getFlag(MODULE_ID, 'hack') ?? 0) > 0);
-      const hackedCount = systems.filter((i) => Number(i.getFlag(MODULE_ID, 'hack') ?? 0) > 0).length;
+      const systems = unitSystems(actor);
+      const hackedCount = systems.filter((i) => hackOf(i) > 0).length;
       const lock = getLevel(actor, 'targetLock');
       const jam = getLevel(actor, 'jammed');
 
@@ -273,7 +297,11 @@ class RadialMenu
                key: 'hacked', label: t('condition.hacked'), type: 'group',
                badge: hackedCount ? tf('menu.hackedCount', { count: hackedCount }) : '',
                empty: t('menu.noSystems'),
-               children: systems.map((item) => ({ key: item.id, label: item.name, type: 'gauge', gauge: hackGauge(item) }))
+               children: systems.map((item) =>
+               {
+                  const mount = mountOf(item);
+                  return { key: item.id, label: item.name, type: 'gauge', gauge: hackGauge(item), tag: mount ? t(`mount.short.${mount}`) : '' };
+               })
             },
             {
                key: 'token', label: t('menu.token'), type: 'group',
@@ -547,17 +575,17 @@ class RadialMenu
          layer.append(svg('path', { d: n === 1 ? sector(c, c, r0, r1, 0.01, 359.99) : sector(c, c, r0, r1, a0, a1), class: cls, 'data-act': 'slice', 'data-i': i }));
 
          const [lx, ly] = polar(c, c, (r0 + r1) / 2, mid);
-         const words = s.label.split(' ');
-         const lines = words.length > 1 && s.label.length > 10 ? [words.slice(0, -1).join(' '), words.at(-1)] : [s.label];
+         const lines = labelLines(s.label);
          const level = s.type === 'gauge' ? s.gauge.get(actor) : null;
-         const value = s.type === 'gauge' ? (level ? s.gauge.cell(level) : '') : s.badge ?? '';
+         let value = s.type === 'gauge' ? (level ? s.gauge.cell(level) : '') : s.badge ?? '';
+         if (s.tag) { value = value ? `${s.tag} · ${value}` : s.tag; }
          const top = ly - (lines.length - 1) * 6 - (value ? 5 : 0);
          lines.forEach((line, j) => layer.append(svg('text', { x: lx, y: top + j * 12 + 4, class: 'etu-slice-label' }, line.toUpperCase())));
          if (value)
          {
             layer.append(svg('text', {
                x: lx, y: top + lines.length * 12 + 6, class: 'etu-slice-value',
-               style: `fill: ${s.type === 'gauge' ? s.gauge.color(level) : 'var(--etu-accent)'}`
+               style: `fill: ${s.type !== 'gauge' ? 'var(--etu-accent)' : level ? s.gauge.color(level) : 'var(--etu-muted)'}`
             }, value));
          }
          if (s.type === 'group' || s.type === 'more')
@@ -567,7 +595,7 @@ class RadialMenu
          }
          if (i < 9)
          {
-            const [nx, ny] = polar(c, c, r1 + 12, mid);
+            const [nx, ny] = polar(c, c, r1 + 14, mid);
             layer.append(svg('text', { x: nx, y: ny + 4, class: 'etu-slice-key' }, String(i + 1)));
          }
       });

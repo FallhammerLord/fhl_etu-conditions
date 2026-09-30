@@ -67,6 +67,17 @@ await page.keyboard.press('4');
 await wait();
 await page.screenshot({ path: new URL('radial-hacked.png', out).pathname });
 check(await page.evaluate(() => window.radialMenu.path.join('/')) === 'hacked', 'key 4 opens Hacked');
+const hackedSlices = await page.locator('[data-act="slice"]').count();
+check(hackedSlices === 4, `Hacked lists 4 systems (rail, Silver Hail once, bay, sensor array), got ${hackedSlices}`);
+
+// Hacking the linked attack's system: set 2 on Silver Hail, then read it from the attack half.
+await page.click('[data-act="slice"][data-i="1"]');
+await page.click('[data-act="cell"][data-v="2"]');
+await wait();
+check(await page.evaluate(() => window.store.getHacked(window.actor).map((h) => `${h.name}:${h.rating}`).join(',')) === 'Silver Hail:2,Missile Bay:3',
+   'Silver Hail hacked once, on the artifact');
+await page.keyboard.press('Escape');
+await wait();
 
 // Temperature via root wheel: Hot (2) -> Overheating (3).
 await page.keyboard.press('Escape');

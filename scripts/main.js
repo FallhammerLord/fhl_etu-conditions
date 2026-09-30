@@ -10,6 +10,7 @@ import { api } from './api.js';
 import { drawPips, positionPips, redrawAllPips, repositionAllPips } from './pips.js';
 import { radialMenu } from './radial.js';
 import { activeTokens, ensureStylesheet, installTokenRightClick } from './compat.js';
+import { onRenderItemSheet } from './item-sheet.js';
 
 Hooks.once('init', () =>
 {
@@ -20,6 +21,7 @@ Hooks.once('init', () =>
 });
 
 Hooks.once('ready', () => ensureStylesheet(MODULE_ID, 'styles/etu.css'));
+Hooks.on('renderCypherItemSheet', onRenderItemSheet);
 
 Hooks.on('drawToken', (token) => drawPips(token));
 Hooks.on('refreshToken', (token) =>

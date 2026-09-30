@@ -1,7 +1,7 @@
 /**
  * Reading and writing condition levels.
  * Unit conditions: one Active Effect per condition, found by its status ID, level in a flag.
- * Hacked: a rating flag on the item (Hard Point, Sensor, or Bay).
+ * Hacked: a rating flag on the system's host item (see items.js for linked pairs).
  * Writes for one actor run one at a time, so fast wheel nudges can't create duplicate effects.
  */
 
@@ -9,6 +9,7 @@ import { MODULE_ID } from './constants.js';
 import { CONDITIONS, CONDITION_ORDER, HACKED, clampLevel, conditionLabel } from './conditions.js';
 import { canEdit } from './settings.js';
 import { showIconNever } from './compat.js';
+import { hackOf, hostOf, systemGroup } from './items.js';
 
 /** Per-actor write queues, keyed by actor UUID. */
 const queues = new Map();
@@ -58,9 +59,16 @@ export function getLevel(actor, key)
  */
 export function getHacked(actor)
 {
-   return actor.items
-      .map((item) => ({ id: item.id, name: item.name, rating: clampLevel(HACKED.key, item.getFlag(MODULE_ID, 'hack') ?? 0) }))
-      .filter((h) => h.rating > 0);
+   const out = [];
+   for (const item of actor.items)
+   {
+      if (!(Number(item.flags?.[MODULE_ID]?.hack) > 0)) { continue; }
+      // A linked attack and its artifact are one system: report it once, under the host.
+      const host = hostOf(item);
+      if (out.some((h) => h.id === host.id)) { continue; }
+      out.push({ id: host.id, name: host.name, rating: clampLevel(HACKED.key, hackOf(host)) });
+   }
+   return out;
 }
 
 /**
@@ -168,7 +176,8 @@ export async function adjustLevel(actor, key, delta)
 }
 
 /**
- * Sets a system's Hack rating. Rating 0 removes the flag.
+ * Sets a system's Hack rating. Rating 0 removes it. The rating is stored on the system's host (a linked
+ * artifact, when there is one), so hacking either half of a linked pair hacks both.
  *
  * @param {Actor} actor - The unit that owns the system.
  * @param {string} itemRef - Item ID or exact item name.
@@ -187,8 +196,14 @@ export async function setHack(actor, itemRef, rating)
    const value = clampLevel(HACKED.key, rating);
    return enqueue(actor, async () =>
    {
-      if (value === 0) { await item.unsetFlag(MODULE_ID, 'hack'); }
-      else { await item.setFlag(MODULE_ID, 'hack', value); }
+      const [host, ...linked] = systemGroup(item);
+      if (value === 0) { await host.unsetFlag(MODULE_ID, 'hack'); }
+      else { await host.setFlag(MODULE_ID, 'hack', value); }
+      // Clear ratings left on linked items from before they were linked.
+      for (const other of linked)
+      {
+         if (other.flags?.[MODULE_ID]?.hack !== undefined) { await other.unsetFlag(MODULE_ID, 'hack'); }
+      }
       return value;
    });
 }
