@@ -123,6 +123,13 @@ check(await page.evaluate(() => !document.querySelector('.ccs-card[data-item-id=
 await page.evaluate(() => window.decorate());
 check(await page.evaluate(() => document.querySelectorAll('.etu-hack-badge').length) === 3, 're-decorating does not stack overlays');
 await page.screenshot({ path: new URL('card-overlay.png', out).pathname, clip: { x: 0, y: 440, width: 900, height: 220 } });
+const stamped = page.locator('.ccs-card.etu-hacked').last();
+check(await stamped.locator('.etu-hack-badge').evaluate((el) => getComputedStyle(el).opacity) === '1', 'the stamp is at full strength by default');
+await stamped.hover();
+await page.waitForTimeout(300);
+check(await stamped.locator('.etu-hack-badge').evaluate((el) => getComputedStyle(el).opacity) === '0.5', 'hovering a card fades its stamp to half');
+await page.screenshot({ path: new URL('card-overlay-hover.png', out).pathname, clip: { x: 0, y: 440, width: 900, height: 220 } });
+await page.mouse.move(5, 5);
 
 // A right-click opens on release, not on press; a release after dragging (a pan) opens nothing.
 const rightClick = (dx) => page.evaluate(async (dx) =>

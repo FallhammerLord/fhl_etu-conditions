@@ -77,7 +77,7 @@ NPCs and Companions away from Normal take ambient damage instead.
 A Hack rating on one system (Hard Point, Sensor, or Bay). Using it takes a Reactor test against the rating first. A Cypher Card Sheet linked pair (artifact + attack) is one system: hacking either hacks both.
 
 ### 3.5a Hacked on the Cypher Card Sheet
-When a character uses the Cypher Card Sheet, each hacked system's card gets an overlay: a hazard hatch and outline in the Hacked colour, and a "HACKED n" stamp across the middle, turned 45 degrees like a rejected stamp on a document. The stamp sits under the card's own text (which has a dark outline), so name and value stay readable; it lets clicks through to the card. Unhacked cards are untouched. Linked cards read the artifact's rating, so both halves of a pair show it. This gives Hacked an obvious home beyond the token's "H1" pip.
+When a character uses the Cypher Card Sheet, each hacked system's card gets an overlay: a hazard hatch and outline in the Hacked colour, and a "HACKED n" stamp across the middle, turned 45 degrees like a rejected stamp on a document. The stamp prints over the whole card at full strength and fades to half when the card is hovered or focused, so the name and value beneath can be read; it lets clicks through to the card. Unhacked cards are untouched. Linked cards read the artifact's rating, so both halves of a pair show it. This gives Hacked an obvious home beyond the token's "H1" pip.
 
 ### 3.6 Which items are systems
 Mount comes from, in order: the item's ETU setting (Settings tab); a Cypher System tag named Hard Point, Sensor(s), or Bay; the item's name. Cypher tags are read, never toggled. Best practice: keep mount tags switched on, because toggling any tag archives items whose tags are all off.

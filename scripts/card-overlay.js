@@ -1,8 +1,9 @@
 /**
  * Hacked overlay on the Cypher Card Sheet's item cards (only when that module's sheet is in use).
  * A hacked system's card gets a hazard tint and a "HACKED n" stamp across its middle, like a rejected
- * stamp on a document; unhacked cards are untouched. Both sit under the card's own text (name, value,
- * training), which has a dark outline, so the text stays readable on top. Clicks pass through.
+ * stamp on a document; unhacked cards are untouched. The tint sits under the card's text; the stamp prints
+ * over everything at full strength and fades to half when the card is hovered or focused, so the text
+ * beneath can be read. Clicks pass through the stamp to the card.
  * Linked cards (an attack linked to its artifact) read the artifact's rating, so both show it.
  * Card markup baseline: cypher-card-sheet 1.0 (`article.ccs-card[data-item-id] > .ccs-card-body`).
  */
@@ -62,9 +63,10 @@ export function decorateCards(root, actor)
       sr.textContent = `. ${note}`;
       badge.append(text, sr);
 
-      // Over the art, under the card's text: right after the shade the card draws over its art.
+      // Tint over the art, under the card's text (right after the shade); stamp on top of everything.
       const shade = body.querySelector('.ccs-card-shade');
-      if (shade) { shade.after(veil, badge); }
-      else { body.prepend(veil, badge); }
+      if (shade) { shade.after(veil); }
+      else { body.prepend(veil); }
+      body.append(badge);
    }
 }
