@@ -1,0 +1,17 @@
+{
+  "name": "fhl-etu-conditions",
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling only. The module itself has no build step.",
+  "scripts": {
+    "lint": "eslint scripts tools",
+    "load": "node tools/load-check.mjs",
+    "rules": "node tools/rules-check.mjs",
+    "check": "npm run lint && npm run load && npm run rules"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}

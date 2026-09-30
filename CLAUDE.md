@@ -4,34 +4,58 @@ Read this first in any new session. The full design, rules, and open decisions l
 
 ## What this is
 
-A Foundry VTT **v14** module for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked, plus Drain), sets them from a radial token menu, and pre-fills the Cypher System All-in-One roll dialog. Plain ES modules, no build step. Nothing is built yet; the status is spec plus mockup.
+A Foundry VTT **v14** module (ID `fhl-etu-conditions`, CSS prefix `etu-`) for a Cypher System hack about Ether-Tech units (ETUs). It tracks the hack's conditions (Temperature, Target Lock, Jammed, Recoil, Hacked, plus Drain), sets them from a radial token menu, and pre-fills the Cypher System All-in-One roll dialog. Plain ES modules, no build step. Version 0.1.0.
 
 Targets: Foundry v14, Cypher System 3.5.x (`cyphersystem`, verified on 14.360).
+
+Status: milestones 1–2 written (skeleton, condition store, token pips, macro API). Not yet tested in Foundry. Next: milestone 3, the radial menu (mockup in `docs/mockups/radial-menu.html`).
 
 ## Working with the user
 
 - The user has dyslexia: keep replies concise, plain, and forward-stated.
-- Say what was verified and what wasn't. Nothing here can run inside Foundry; the user tests in their own v14 world and reports back. Ask for console errors (F12) when something breaks.
+- Say what was verified and what wasn't. Nothing here can run inside Foundry; the user tests in their own v14 world and reports back. Ask for console errors (F12) when something breaks. `docs/TESTING.md` holds the test macros.
 - Commit and push after each coherent slice. Don't open a PR unless asked.
+
+## Commands
+
+```sh
+npm run check   # lint + load + rules. Run before every push.
+npm run load    # imports every module file with Foundry mocked and runs init
+npm run rules   # rules math, plus the condition store against an in-memory actor
+```
 
 ## Design rules
 
 - **Track, don't enforce.** Never block a roll or an action. Every pre-filled modifier is visible and can be unchecked.
-- **Version-sensitive Foundry and Cypher System calls go only in `compat.js`.**
+- **Version-sensitive Foundry and Cypher System calls go only in `scripts/compat.js`.** That includes PIXI drawing.
 - **Right-click:** extend whatever `CONFIG.Token.objectClass` holds at `init` (the Cypher System sets `CypherSystemToken`). Never replace it outright. Shift + right-click calls `super` to open Foundry's HUD.
 - **Pools:** Frame = Might, Reactor = Speed, Strain = Intellect in the system's data.
+- **Storage:** one Active Effect per unit condition, found by status ID (`etu-temperature`, `etu-target-lock`, `etu-jammed`, `etu-recoil`), level in `flags.fhl-etu-conditions.level`, `showIcon` NEVER (our pips show levels). Hacked is `flags.fhl-etu-conditions.hack` on the item.
+- **All writes for one actor go through the queue in `store.js`,** read and write in one step, so rapid nudges can't race.
+- **Pure rules math lives in `scripts/rules.js`** with no Foundry calls, tested by `npm run rules`.
 - **Visual modules are optional** and sit behind an adapter that fails quietly.
 
 ## Lessons carried over from the Fallhammer Quest Log
 
-- One bad import stops the whole module in Foundry, and ESLint won't catch it. Keep a load check that imports every file with Foundry mocked.
+- One bad import stops the whole module in Foundry, and ESLint won't catch it. `npm run load` catches it.
 - Don't rely on Handlebars `eq`/`and`/`or`; compute booleans in JS.
 - GM-relayed requests (`CONFIG.queries`) don't know who sent them. Re-check everything against the named user.
 - Colors only through CSS tokens.
+- After any scripted cut or splice of a file, diff it against the previous commit.
 
 ## Map
 
 | Path | Role |
 |---|---|
+| `scripts/main.js` | init hook, token draw/refresh hooks, document hooks that redraw pips |
+| `scripts/compat.js` | **only** place for version-sensitive APIs (PIXI, status constants, tokens) |
+| `scripts/conditions.js` | condition registry, temperature scale, status effect registration |
+| `scripts/store.js` | read/write levels and hack ratings, per-actor write queue, permissions |
+| `scripts/api.js` | public macro API (`game.modules.get(id).api`) |
+| `scripts/rules.js` | pure rules math: temperature cost, lock vs jam, signal cutoff, Drain |
+| `scripts/pips.js` | condition pips drawn above tokens |
+| `scripts/settings.js` | player edit rights per condition, pip toggle |
+| `tools/` | Foundry mock, load check, rules and store checks |
 | `docs/SCOPE.md` | scope, rules as implemented, spec, milestones, open decisions |
-| `docs/mockups/radial-menu.html` | clickable radial menu mockup (open in a browser) |
+| `docs/TESTING.md` | install notes and test macros for the user |
+| `docs/mockups/radial-menu.html` | clickable radial menu mockup |

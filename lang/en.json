@@ -1,0 +1,39 @@
+{
+  "fhl-etu-conditions": {
+    "condition": {
+      "temperature": "Temperature",
+      "targetLock": "Target Lock",
+      "jammed": "Jammed",
+      "recoil": "Recoil",
+      "hacked": "Hacked"
+    },
+    "temperature": {
+      "freezing": "Freezing",
+      "cold": "Cold",
+      "chill": "Chill",
+      "normal": "Normal",
+      "warm": "Warm",
+      "hot": "Hot",
+      "overheating": "Overheating"
+    },
+    "settings": {
+      "playerEdit": {
+        "hint": "Players can change this condition on units they own. The GM can always change it.",
+        "temperature": { "name": "Players set Temperature" },
+        "targetLock": { "name": "Players set Target Lock" },
+        "jammed": { "name": "Players set Jammed" },
+        "recoil": { "name": "Players set Recoil" },
+        "hacked": { "name": "Players set Hacked systems" }
+      },
+      "showPips": {
+        "name": "Show condition pips on tokens",
+        "hint": "Small labels above each token showing its active conditions and levels."
+      }
+    },
+    "warn": {
+      "notOwner": "You don't own {name}, so you can't change its conditions.",
+      "gmOnly": "Only the GM can change this condition. The GM can allow it in Module Settings.",
+      "noItem": "{name} has no system called \"{item}\"."
+    }
+  }
+}
