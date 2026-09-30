@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ETU Radial Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a mock Foundry scene on the left, the roll pre-fill preview on the right; stacks at phone width. Single dark look (a VTT canvas). */
+:root {
+  color-scheme: dark;
+  --bg: #0e1318;
+  --panel: #161d25;
+  --panel-2: #1c2530;
+  --line: #2b3643;
+  --fg: #dde5ee;
+  --muted: #8d9aa9;
+  --accent: #d8b25a;      /* ether gold */
+  --ally: #5aa6c9;
+  --hostile: #d0574e;
+  --ease: #6cc08a;
+  --hinder: #e0875a;
+  --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.wrap { padding-block: 20px 28px; padding-inline: 16px; max-width: 1320px; margin: 0 auto; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .04em; margin: 0; text-transform: uppercase; }
+header p { margin: 0; color: var(--muted); }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stage svg { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.panel { display: grid; gap: 12px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.card h2 { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: 0; color: var(--accent); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.kv { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 4px 10px; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 500; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12px; padding: 5px 10px; background: transparent; color: var(--muted); border: 0; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 -2px 0 var(--accent); }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+select, .step button { font: inherit; font-size: 12px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+.step { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); }
+.step button { width: 26px; cursor: pointer; }
+label.f { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.lines { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.lines li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: start; font-size: 13px; padding: 6px 8px; background: var(--panel-2); border-radius: 4px; }
+.lines li.off { opacity: .45; }
+.lines li.off .txt { text-decoration: line-through; }
+.lines input { margin: 2px 0 0; accent-color: var(--accent); }
+.tag { font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
+.tag.ease { color: var(--ease); } .tag.hinder { color: var(--hinder); } .tag.cost { color: var(--accent); } .tag.warn { color: var(--hostile); }
+.total { display: flex; flex-wrap: wrap; gap: 6px 14px; font-family: var(--font-mono); font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+.empty { color: var(--muted); font-size: 13px; }
+.keys { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 12px; font-size: 13px; margin: 0; }
+.keys dt { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.keys dd { margin: 0; color: var(--fg); }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--accent); color: var(--fg); padding: 7px 12px; border-radius: 4px; font-size: 13px; pointer-events: none; max-width: calc(100% - 32px); }
+.menu-slice { cursor: pointer; }
+@media (prefers-reduced-motion: no-preference) {
+  .ring-in { animation: ringIn .14s ease-out; transform-box: fill-box; }
+  @keyframes ringIn { from { opacity: 0; } to { opacity: 1; } }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>ETU Radial Menu</h1>
+    <p>Mockup. Right-click (or long-press) a token to open the ring.</p>
+  </header>
+  <div class="app">
+    <div class="stage" id="stage">
+      <svg id="svg" viewBox="0 0 960 600" role="application" aria-label="Scene with tokens">
+        <defs>
+          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+            <path d="M60 0H0V60" fill="none" stroke="#223040" stroke-width="1"/>
+          </pattern>
+          <radialGradient id="vig" cx="50%" cy="50%" r="70%">
+            <stop offset="60%" stop-color="#0e1318" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#0e1318" stop-opacity=".75"/>
+          </radialGradient>
+        </defs>
+        <rect width="960" height="600" fill="#131b23"/>
+        <rect width="960" height="600" fill="url(#grid)"/>
+        <rect width="960" height="600" fill="url(#vig)" pointer-events="none"/>
+        <g id="tokens"></g>
+        <g id="menu"></g>
+        <g id="readout" pointer-events="none"></g>
+      </svg>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+
+    <div class="panel">
+      <section class="card" aria-labelledby="pf-h">
+        <h2 id="pf-h">Roll dialog pre-fill</h2>
+        <dl class="kv">
+          <dt>Attacker</dt><dd id="pf-att"></dd>
+          <dt>Target</dt><dd id="pf-tgt"></dd>
+        </dl>
+        <div class="row">
+          <label class="f" for="pf-sys">System
+            <select id="pf-sys"></select>
+          </label>
+          <label class="f" for="pf-pool">Pool
+            <select id="pf-pool"><option>Frame</option><option selected>Reactor</option><option>Strain</option></select>
+          </label>
+          <div class="f">Effort
+            <span class="step"><button type="button" id="ef-dn" aria-label="Less Effort">−</button><span id="ef-v">1</span><button type="button" id="ef-up" aria-label="More Effort">+</button></span>
+          </div>
+        </div>
+        <div class="row">
+          <span class="seg" role="group" aria-label="Firing mode">
+            <button type="button" id="m-opt">Optical</button>
+            <button type="button" id="m-sig">Signal</button>
+          </span>
+          <span class="note" id="m-note"></span>
+        </div>
+        <ul class="lines" id="pf-lines"></ul>
+        <div class="total" id="pf-total"></div>
+        <p class="note">Uncheck a line to drop it. Nothing here stops a roll; it only fills the dialog.</p>
+      </section>
+
+      <section class="card" aria-labelledby="k-h">
+        <h2 id="k-h">Controls</h2>
+        <dl class="keys">
+          <dt>Right-click</dt><dd>Open the ring on a token</dd>
+          <dt>Shift + right-click</dt><dd>Foundry's own Token HUD</dd>
+          <dt>Click a node</dt><dd>Drill in; gauges set on click</dd>
+          <dt>Wheel</dt><dd>Nudge a condition ±1 (root ring or gauge)</dd>
+          <dt>Token / Esc</dt><dd>Back up one ring; closes at root</dd>
+          <dt>1–9, ← →</dt><dd>Pick a slice; step a gauge</dd>
+          <dt>Click / Shift-click</dt><dd>Select / add to selection</dd>
+          <dt>T (hover)</dt><dd>Toggle target</dd>
+        </dl>
+        <p class="note">With several tokens selected, ring changes apply to all of them.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = (id) => document.getElementById(id);
+
+  // ---- Condition definitions -------------------------------------------
+  const TEMP = [
+    { v: -3, name: "Freezing",    short: "FRZ",  color: "#3d7fe0", note: "Reactor and Strain Effort cost +3 each" },
+    { v: -2, name: "Cold",        short: "COLD", color: "#5b9ae6", note: "Reactor Effort cost +1 each" },
+    { v: -1, name: "Chill",       short: "CHILL",color: "#86b3e3", note: "Operates normally" },
+    { v:  0, name: "Normal",      short: "NORM", color: "#9aa6b3", note: "Operates normally" },
+    { v:  1, name: "Warm",        short: "WARM", color: "#e3b07a", note: "Operates normally" },
+    { v:  2, name: "Hot",         short: "HOT",  color: "#e68a4f", note: "Reactor Effort cost +1 each" },
+    { v:  3, name: "Overheating", short: "OVHT", color: "#e25a3a", note: "Reactor and Frame Effort cost +3 each" }
+  ];
+  const tempOf = (v) => TEMP.find((t) => t.v === v);
+  const tempCost = (v, pool) => {
+    if (v === 2 || v === -2) return pool === "Reactor" ? 1 : 0;
+    if (v === 3) return pool === "Reactor" || pool === "Frame" ? 3 : 0;
+    if (v === -3) return pool === "Reactor" || pool === "Strain" ? 3 : 0;
+    return 0;
+  };
+  const range = (n) => Array.from({ length: n + 1 }, (_, i) => i);
+
+  const GAUGES = {
+    temp: {
+      title: "Temperature", levels: TEMP.map((t) => t.v),
+      get: (t) => t.temp, set: (t, v) => (t.temp = v),
+      label: (v) => tempOf(v).short, color: (v) => tempOf(v).color,
+      value: (v) => `${tempOf(v).name} (${v > 0 ? "+" : ""}${v})`,
+      note: (v, t) => t.kind === "npc" && v !== 0 ? "NPC outside Normal: takes ambient damage instead" : tempOf(v).note
+    },
+    lock: {
+      title: "Target Lock", levels: range(10),
+      get: (t) => t.lock, set: (t, v) => (t.lock = v),
+      label: (v) => String(v), color: () => "#d8b25a",
+      value: (v) => (v ? `Locked ${v}` : "No lock"),
+      note: (v) => (v ? `Signal attacks against this unit eased by ${v}, minus the attacker's Jammed level` : "Signal attacks get no easing")
+    },
+    jam: {
+      title: "Jammed", levels: range(10),
+      get: (t) => t.jam, set: (t, v) => (t.jam = v),
+      label: (v) => String(v), color: () => "#b07ad8",
+      value: (v) => (v ? `Jammed ${v}` : "Clear"),
+      note: (v) => (v ? `Signal-reliant tasks hindered by ${v}; signals of level ${v} or lower fail` : "Signals work normally")
+    },
+    recoil: {
+      title: "Recoil", levels: range(8),
+      get: (t) => t.recoil, set: (t, v) => (t.recoil = v),
+      label: (v) => String(v), color: () => "#e0875a",
+      value: (v) => (v ? `Recoil ${v}` : "Stable"),
+      note: (v) => (v ? `Hard Point attacks hindered by ${v} until the end of this unit's next turn` : "No kickback")
+    }
+  };
+  const hackGauge = (sys) => ({
+    title: `Hacked: ${sys}`, levels: range(10),
+    get: (t) => t.hack[sys] || 0, set: (t, v) => (t.hack[sys] = v),
+    label: (v) => String(v), color: () => "#d0574e",
+    value: (v) => (v ? `Hack rating ${v}` : "Secure"),
+    note: (v) => (v ? `Reactor test against ${v} before using ${sys}` : `${sys} is not compromised`)
+  });
+
+  // ---- Scene state (example data) ---------------------------------------
+  const SYSTEMS = ["Hard Point A", "Hard Point B", "Sensor Suite", "Missile Bay"];
+  const RELIANT = new Set(["Missile Bay"]);
+  const mk = (id, name, kind, x, y, extra = {}) => Object.assign(
+    { id, name, kind, x, y, r: 32, temp: 0, lock: 0, jam: 0, recoil: 0, hack: {}, combat: false, hidden: false,
+      systems: kind === "etu" ? SYSTEMS : ["Sensor Suite", "Weapon Mount"] }, extra);
+  const S = {
+    tokens: [
+      mk("vg", "Vanguard", "etu", 300, 330, { temp: 2, recoil: 4, hack: { "Missile Bay": 3 }, combat: true }),
+      mk("ks", "Kestrel", "etu", 440, 180, { temp: -1, jam: 3, combat: true }),
+      mk("rd", "Raider", "npc", 690, 300, { lock: 4, combat: true }),
+      mk("pk", "Picket Drone", "npc", 640, 470, { temp: 3, jam: 2 })
+    ],
+    sel: new Set(["vg"]),
+    target: "rd",
+    menu: null,            // { id, path: [] }
+    hover: null,           // hovered token id
+    hot: null,             // hovered menu element info
+    mode: "signal", pool: "Reactor", effort: 1, system: "Hard Point A",
+    off: new Set()
+  };
+  const tok = (id) => S.tokens.find((t) => t.id === id);
+  const affected = (id) => (S.sel.has(id) ? [...S.sel].map(tok) : [tok(id)]);
+
+  // ---- Geometry -----------------------------------------------------------
+  const pt = (cx, cy, r, a) => { const t = (a * Math.PI) / 180; return [cx + r * Math.sin(t), cy - r * Math.cos(t)]; };
+  const sector = (cx, cy, r0, r1, a0, a1) => {
+    const L = a1 - a0 > 180 ? 1 : 0;
+    const [x1, y1] = pt(cx, cy, r1, a0), [x2, y2] = pt(cx, cy, r1, a1);
+    const [x3, y3] = pt(cx, cy, r0, a1), [x4, y4] = pt(cx, cy, r0, a0);
+    return `M${x1} ${y1}A${r1} ${r1} 0 ${L} 1 ${x2} ${y2}L${x3} ${y3}A${r0} ${r0} 0 ${L} 0 ${x4} ${y4}Z`;
+  };
+  const R0 = 46, R1 = 116;
+  const el = (name, attrs = {}, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (text != null) n.textContent = text;
+    return n;
+  };
+
+  // ---- Menu tree ----------------------------------------------------------
+  function rootNodes(t) {
+    const hacked = Object.values(t.hack).filter((v) => v > 0).length;
+    return [
+      { key: "temp", label: "Thermal", type: "gauge", g: GAUGES.temp },
+      { key: "signal", label: "Signal", type: "group",
+        badge: t.lock || t.jam ? `L${t.lock} J${t.jam}` : "",
+        children: [
+          { key: "lock", label: "Target Lock", type: "gauge", g: GAUGES.lock },
+          { key: "jam", label: "Jammed", type: "gauge", g: GAUGES.jam }
+        ] },
+      { key: "recoil", label: "Recoil", type: "gauge", g: GAUGES.recoil },
+      { key: "hack", label: "Hacked", type: "group", badge: hacked ? `${hacked} sys` : "",
+        children: t.systems.map((s) => ({ key: s, label: s, type: "gauge", g: hackGauge(s) })) },
+      { key: "token", label: "Token", type: "group",
+        children: [
+          { key: "target", label: S.target === t.id ? "Untarget" : "Target", type: "action",
+            run: () => { S.target = S.target === t.id ? null : t.id; } },
+          { key: "combat", label: t.combat ? "Leave combat" : "Join combat", type: "action",
+            run: () => affected(t.id).forEach((x) => (x.combat = !t.combat)) },
+          { key: "hide", label: t.hidden ? "Reveal" : "Hide", type: "action",
+            run: () => affected(t.id).forEach((x) => (x.hidden = !t.hidden)) },
+          { key: "core", label: "Foundry HUD", type: "action",
+            run: () => { toast("Foundry's own Token HUD opens here (also Shift + right-click)."); S.menu = null; } }
+        ] },
+      { key: "clear", label: "Clear all", type: "action",
+        run: () => { affected(t.id).forEach((x) => { x.temp = 0; x.lock = 0; x.jam = 0; x.recoil = 0; x.hack = {}; }); toast("Conditions cleared"); } }
+    ];
+  }
+  function resolve() {
+    const t = tok(S.menu.id);
+    let node = { label: t.name, type: "group", children: rootNodes(t) };
+    const trail = [t.name];
+    for (const key of S.menu.path) {
+      const next = node.children.find((c) => c.key === key);
+      if (!next) break;
+      node = next; trail.push(next.label);
+    }
+    return { t, node, trail };
+  }
+
+  // ---- Rendering ------------------------------------------------------------
+  function renderTokens() {
+    const g = $("tokens"); g.replaceChildren();
+    for (const t of S.tokens) {
+      const grp = el("g", { "data-tok": t.id, style: "cursor:pointer", opacity: t.hidden ? 0.45 : 1 });
+      const ring = t.kind === "etu" ? "#5aa6c9" : "#d0574e";
+      if (t.temp !== 0) grp.append(el("circle", { cx: t.x, cy: t.y, r: t.r + 7, fill: "none", stroke: tempOf(t.temp).color, "stroke-width": Math.abs(t.temp) * 2 + 1, opacity: 0.55 }));
+      if (t.jam) grp.append(el("circle", { cx: t.x, cy: t.y, r: t.r + 2, fill: "none", stroke: "#b07ad8", "stroke-width": 2, "stroke-dasharray": "3 5", opacity: 0.9 }));
+      grp.append(el("circle", { cx: t.x, cy: t.y, r: t.r, fill: "#1f2a36", stroke: ring, "stroke-width": 3 }));
+      grp.append(el("text", { x: t.x, y: t.y + 5, "text-anchor": "middle", fill: "#dde5ee", "font-family": "Chakra Petch, sans-serif", "font-weight": 600, "font-size": 15 }, t.name.split(" ").map((w) => w[0]).join("")));
+      grp.append(el("text", { x: t.x, y: t.y + t.r + 36, "text-anchor": "middle", fill: "#aab6c3", "font-size": 12, "font-family": "IBM Plex Sans, sans-serif" }, t.name));
+      if (S.sel.has(t.id)) grp.append(el("circle", { cx: t.x, cy: t.y, r: t.r + 4, fill: "none", stroke: "#d8b25a", "stroke-width": 2, "stroke-dasharray": "6 4" }));
+      if (S.target === t.id) {
+        for (const a of [0, 90, 180, 270]) {
+          const [x1, y1] = pt(t.x, t.y, t.r + 10, a), [x2, y2] = pt(t.x, t.y, t.r + 20, a);
+          grp.append(el("line", { x1, y1, x2, y2, stroke: "#d0574e", "stroke-width": 3, "stroke-linecap": "round" }));
+        }
+      }
+      // Status pips at rest
+      const pips = [];
+      if (t.temp) pips.push([tempOf(t.temp).short, tempOf(t.temp).color]);
+      if (t.lock) pips.push([`L${t.lock}`, "#d8b25a"]);
+      if (t.jam) pips.push([`J${t.jam}`, "#b07ad8"]);
+      if (t.recoil) pips.push([`R${t.recoil}`, "#e0875a"]);
+      const hk = Object.values(t.hack).filter((v) => v > 0).length;
+      if (hk) pips.push([`H${hk}`, "#d0574e"]);
+      if (t.combat) pips.push(["⚔", "#aab6c3"]);
+      const w = 34, total = pips.length * w, y = t.y - t.r - 22;
+      pips.forEach(([txt, c], i) => {
+        const x = t.x - total / 2 + i * w + w / 2;
+        grp.append(el("rect", { x: x - 15, y: y - 9, width: 30, height: 16, rx: 3, fill: "#0e1318", stroke: c, "stroke-width": 1 }));
+        grp.append(el("text", { x, y: y + 3, "text-anchor": "middle", fill: c, "font-size": 10, "font-family": "IBM Plex Mono, monospace" }, txt));
+      });
+      g.append(grp);
+    }
+  }
+
+  function renderMenu() {
+    const g = $("menu"); g.replaceChildren();
+    $("readout").replaceChildren();
+    if (!S.menu) return;
+    const { t, node, trail } = resolve();
+    const cx = t.x, cy = t.y;
+    const layer = el("g", S.anim ? { class: "ring-in" } : {}); S.anim = false;
+    layer.append(el("circle", { cx, cy, r: R1 + 6, fill: "#0e1318", opacity: 0.55 }));
+
+    if (node.type === "group") {
+      const kids = node.children, n = kids.length, span = 360 / n;
+      kids.forEach((k, i) => {
+        const a0 = i * span - span / 2 + 1.5, a1 = (i + 1) * span - span / 2 - 1.5, mid = i * span;
+        const isHot = S.hot && S.hot.kind === "node" && S.hot.i === i;
+        const path = el("path", { d: sector(cx, cy, R0, R1, a0, a1), class: "menu-slice",
+          fill: isHot ? "#2b3a4a" : "#1c2530", stroke: k.type === "group" ? "#d8b25a" : "#3a4858", "stroke-width": k.type === "group" ? 1.5 : 1,
+          "data-act": "node", "data-i": i });
+        layer.append(path);
+        const [lx, ly] = pt(cx, cy, (R0 + R1) / 2, mid);
+        const words = k.label.split(" ");
+        const lines = words.length > 1 && k.label.length > 9 ? [words.slice(0, -1).join(" "), words.at(-1)] : [k.label];
+        const value = k.type === "gauge" ? k.g.label(k.g.get(t)) : k.badge || "";
+        const vColor = k.type === "gauge" ? k.g.color(k.g.get(t)) : "#d8b25a";
+        const baseY = ly - (lines.length - 1) * 6 - (value ? 5 : 0);
+        lines.forEach((ln, j) => layer.append(el("text", { x: lx, y: baseY + j * 12 + 4, "text-anchor": "middle", fill: "#dde5ee", "font-size": 11, "font-family": "Chakra Petch, sans-serif", "font-weight": 600, "letter-spacing": ".04em", "pointer-events": "none" }, ln.toUpperCase())));
+        const isZero = k.type === "gauge" && k.g.get(t) === 0;
+        if (value && !isZero) layer.append(el("text", { x: lx, y: baseY + lines.length * 12 + 6, "text-anchor": "middle", fill: vColor, "font-size": 11, "font-family": "IBM Plex Mono, monospace", "pointer-events": "none" }, value));
+        if (k.type === "group") {
+          const [dx, dy] = pt(cx, cy, R1 - 7, mid);
+          layer.append(el("circle", { cx: dx, cy: dy, r: 2.5, fill: "#d8b25a", "pointer-events": "none" }));
+        }
+        const [nx, ny] = pt(cx, cy, R1 + 12, mid);
+        if (i < 9) layer.append(el("text", { x: nx, y: ny + 4, "text-anchor": "middle", fill: "#6f7c8b", "font-size": 10, "font-family": "IBM Plex Mono, monospace", "pointer-events": "none" }, String(i + 1)));
+      });
+    } else if (node.type === "gauge") {
+      const gg = node.g, lv = gg.levels, cur = gg.get(t);
+      const start = 225, sweep = 270, w = sweep / lv.length;
+      lv.forEach((v, i) => {
+        const a0 = start + i * w + 1, a1 = start + (i + 1) * w - 1, mid = start + (i + 0.5) * w;
+        const active = v === cur;
+        const within = (lv[0] < 0) ? (cur < 0 ? v >= cur && v < 0 : cur > 0 ? v <= cur && v > 0 : false) : v > 0 && v <= cur;
+        const isHot = S.hot && S.hot.kind === "cell" && S.hot.v === v;
+        layer.append(el("path", { d: sector(cx, cy, R0 + 8, R1, a0, a1), class: "menu-slice",
+          fill: active ? gg.color(v) : within ? gg.color(v) : isHot ? "#2b3a4a" : "#1c2530",
+          "fill-opacity": active ? 1 : within ? 0.45 : 1,
+          stroke: active ? "#fff" : "#3a4858", "stroke-width": active ? 1.5 : 1,
+          "data-act": "cell", "data-v": v }));
+        const [lx, ly] = pt(cx, cy, (R0 + 8 + R1) / 2, mid);
+        layer.append(el("text", { x: lx, y: ly + 4, "text-anchor": "middle", fill: active ? "#0e1318" : "#dde5ee", "font-size": lv.length > 8 ? 12 : 10, "font-weight": 600, "font-family": "IBM Plex Mono, monospace", "pointer-events": "none" }, gg.label(v)));
+      });
+      // Gap at the bottom holds the back hint
+      const [bx, by] = pt(cx, cy, (R0 + R1) / 2 + 4, 180);
+      layer.append(el("text", { x: bx, y: by + 4, "text-anchor": "middle", fill: "#8d9aa9", "font-size": 10, "font-family": "IBM Plex Mono, monospace", "pointer-events": "none" }, "◂ back"));
+    }
+    // Center: back / close
+    layer.append(el("circle", { cx, cy, r: R0 - 3, fill: "transparent", stroke: "#d8b25a", "stroke-opacity": 0.35, "data-act": "back", style: "cursor:pointer" }));
+    // Breadcrumb
+    const crumb = trail.join("  ›  ") + (S.sel.has(t.id) && S.sel.size > 1 ? `   ·  ${S.sel.size} selected` : "");
+    const by = Math.max(18, cy - R1 - 26);
+    const cw = crumb.length * 6.6 + 20;
+    layer.append(el("rect", { x: cx - cw / 2, y: by - 13, width: cw, height: 20, rx: 3, fill: "#0e1318", stroke: "#2b3643" }));
+    layer.append(el("text", { x: cx, y: by + 1, "text-anchor": "middle", fill: "#d8b25a", "font-size": 11, "font-family": "IBM Plex Mono, monospace" }, crumb));
+    g.append(layer);
+    renderReadout();
+  }
+
+  function renderReadout() {
+    const g = $("readout"); g.replaceChildren();
+    if (!S.menu) return;
+    const { t, node } = resolve();
+    let title = "", note = "";
+    if (node.type === "gauge") {
+      const v = S.hot && S.hot.kind === "cell" ? S.hot.v : node.g.get(t);
+      title = `${node.g.title}: ${node.g.value(v)}`; note = node.g.note(v, t);
+    } else if (S.hot && S.hot.kind === "node") {
+      const k = node.children[S.hot.i];
+      if (k.type === "gauge") { title = `${k.g.title}: ${k.g.value(k.g.get(t))}`; note = k.g.note(k.g.get(t), t) + "  ·  wheel ±1"; }
+      else if (k.type === "group") { title = k.label; note = "Opens a ring of options"; }
+      else { title = k.label; note = "Runs now"; }
+    } else return;
+    const cx = t.x, y = Math.min(600 - 44, t.y + R1 + 22);
+    const w = Math.max(title.length * 7.4, note.length * 6.2) + 24;
+    const x = Math.min(960 - w - 6, Math.max(6, cx - w / 2));
+    g.append(el("rect", { x, y, width: w, height: 40, rx: 4, fill: "#161d25", stroke: "#2b3643" }));
+    g.append(el("text", { x: x + 12, y: y + 16, fill: "#dde5ee", "font-size": 12.5, "font-weight": 600, "font-family": "IBM Plex Sans, sans-serif" }, title));
+    g.append(el("text", { x: x + 12, y: y + 32, fill: "#8d9aa9", "font-size": 11, "font-family": "IBM Plex Sans, sans-serif" }, note));
+  }
+
+  // ---- Roll pre-fill preview -------------------------------------------------
+  function renderPreview() {
+    const att = [...S.sel].map(tok).find((t) => t.kind === "etu");
+    const tgt = S.target ? tok(S.target) : null;
+    $("pf-att").textContent = att ? att.name : "Select an ETU token";
+    $("pf-tgt").textContent = tgt ? tgt.name : "None (press T over a token)";
+    const sys = $("pf-sys");
+    if (att) {
+      if (!att.systems.includes(S.system)) S.system = att.systems[0];
+      sys.replaceChildren(...att.systems.map((s) => { const o = document.createElement("option"); o.textContent = s; o.selected = s === S.system; return o; }));
+    }
+    sys.disabled = !att;
+    const reliant = RELIANT.has(S.system);
+    if (reliant) S.mode = "signal";
+    $("m-opt").disabled = reliant;
+    $("m-opt").setAttribute("aria-pressed", S.mode === "optical");
+    $("m-sig").setAttribute("aria-pressed", S.mode === "signal");
+    $("m-note").textContent = reliant ? `${S.system} is Signal: Reliant` : "";
+    $("ef-v").textContent = S.effort;
+
+    const ul = $("pf-lines"); ul.replaceChildren();
+    const total = $("pf-total"); total.replaceChildren();
+    if (!att) { ul.innerHTML = '<li class="empty" style="display:block">Select an ETU to see what the dialog would fill in.</li>'; return; }
+    const lines = [];
+    if (S.mode === "signal") {
+      const lock = tgt ? tgt.lock : 0, jam = att.jam;
+      if (lock > jam) lines.push({ key: "lock", txt: `Target Lock ${lock} on ${tgt.name}` + (jam ? `, minus Jammed ${jam}` : ""), steps: lock - jam });
+      else if (jam > 0) lines.push({ key: "jam", txt: lock ? `Jammed ${jam} overrides Target Lock ${lock}` : `Jammed ${jam}`, steps: -jam });
+    }
+    if (S.system.startsWith("Hard Point") && att.recoil) lines.push({ key: "recoil", txt: `Recoil ${att.recoil} on Hard Point attacks`, steps: -att.recoil });
+    const per = tempCost(att.temp, S.pool);
+    if (per && S.effort) lines.push({ key: "temp", txt: `${tempOf(att.temp).name}: ${S.pool} +${per} per Effort × ${S.effort}`, cost: per * S.effort });
+    const hk = att.hack[S.system];
+    if (hk) lines.push({ key: "hack", txt: `${S.system} is Hacked (${hk}). Roll Reactor vs ${hk} first; fail means it won't respond.`, warn: true });
+
+    if (!lines.length) { ul.innerHTML = '<li class="empty" style="display:block">No conditions apply to this roll.</li>'; }
+    let steps = 0, cost = 0;
+    for (const L of lines) {
+      const on = !S.off.has(L.key);
+      if (on) { steps += L.steps || 0; cost += L.cost || 0; }
+      const li = document.createElement("li"); if (!on) li.className = "off";
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = on; cb.id = `line-${L.key}`;
+      cb.setAttribute("aria-label", `Apply: ${L.txt}`);
+      cb.addEventListener("change", () => { cb.checked ? S.off.delete(L.key) : S.off.add(L.key); renderPreview(); });
+      const txt = document.createElement("span"); txt.className = "txt"; txt.textContent = L.txt;
+      const tag = document.createElement("span");
+      if (L.warn) { tag.className = "tag warn"; tag.textContent = "check"; }
+      else if (L.cost) { tag.className = "tag cost"; tag.textContent = `+${L.cost} ${S.pool}`; }
+      else { tag.className = `tag ${L.steps > 0 ? "ease" : "hinder"}`; tag.textContent = `${L.steps > 0 ? "ease" : "hinder"} ${Math.abs(L.steps)}`; }
+      li.append(cb, txt, tag); ul.append(li);
+    }
+    const a = document.createElement("span");
+    a.textContent = steps === 0 ? "Difficulty: no change" : `Difficulty: ${steps > 0 ? "eased" : "hindered"} ${Math.abs(steps)}`;
+    a.style.color = steps > 0 ? "var(--ease)" : steps < 0 ? "var(--hinder)" : "var(--muted)";
+    const b = document.createElement("span");
+    b.textContent = `Extra cost: +${cost} ${S.pool}`; b.style.color = cost ? "var(--accent)" : "var(--muted)";
+    total.append(a, b);
+  }
+
+  function render() { renderTokens(); renderMenu(); renderPreview(); }
+
+  // ---- Interaction -------------------------------------------------------------
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600);
+  }
+  const svg = $("svg");
+  const tokId = (e) => e.target.closest("[data-tok]")?.getAttribute("data-tok");
+  const act = (e) => e.target.closest("[data-act]");
+
+  function openMenu(id) {
+    if (!S.sel.has(id)) { S.sel = new Set([id]); }
+    S.menu = { id, path: [] }; S.hot = null; S.anim = true; render();
+  }
+  function back() {
+    if (!S.menu) return;
+    if (S.menu.path.length) S.menu.path.pop(); else S.menu = null;
+    S.hot = null; S.anim = true; render();
+  }
+  function choose(i) {
+    const { node } = resolve();
+    if (node.type !== "group") return;
+    const k = node.children[i]; if (!k) return;
+    if (k.type === "action") { k.run(); if (S.menu && k.key !== "target") S.menu.path = []; S.hot = null; render(); return; }
+    S.menu.path.push(k.key); S.hot = null; S.anim = true; render();
+  }
+  function setGauge(g, id, v) {
+    affected(id).forEach((t) => g.set(t, v));
+    S.off.clear();
+  }
+
+  svg.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const id = tokId(e);
+    if (e.shiftKey) { if (id) toast("Foundry's own Token HUD would open here."); return; }
+    if (S.menu && act(e)) { back(); return; }
+    if (id) openMenu(id); else if (S.menu) { S.menu = null; render(); }
+  });
+
+  svg.addEventListener("click", (e) => {
+    const a = act(e);
+    if (S.menu && a) {
+      const kind = a.getAttribute("data-act");
+      if (kind === "back") return back();
+      if (kind === "node") return choose(+a.getAttribute("data-i"));
+      if (kind === "cell") {
+        const { node } = resolve();
+        setGauge(node.g, S.menu.id, +a.getAttribute("data-v"));
+        render(); return;
+      }
+    }
+    const id = tokId(e);
+    if (S.menu) { S.menu = null; S.hot = null; }
+    if (id) {
+      if (e.shiftKey) { S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); }
+      else S.sel = new Set([id]);
+    } else if (!e.shiftKey) S.sel.clear();
+    render();
+  });
+
+  svg.addEventListener("pointermove", (e) => {
+    S.hover = tokId(e) || null;
+    if (!S.menu) return;
+    const a = act(e);
+    let hot = null;
+    if (a) {
+      const k = a.getAttribute("data-act");
+      if (k === "node") hot = { kind: "node", i: +a.getAttribute("data-i") };
+      if (k === "cell") hot = { kind: "cell", v: +a.getAttribute("data-v") };
+    }
+    const same = JSON.stringify(hot) === JSON.stringify(S.hot);
+    if (!same) { S.hot = hot; renderMenu(); }
+  });
+
+  svg.addEventListener("wheel", (e) => {
+    if (!S.menu) return;
+    const a = act(e); if (!a) return;
+    const { t, node } = resolve();
+    let g = null;
+    if (node.type === "gauge") g = node.g;
+    else if (a.getAttribute("data-act") === "node") { const k = node.children[+a.getAttribute("data-i")]; if (k.type === "gauge") g = k.g; }
+    if (!g) return;
+    e.preventDefault();
+    const lv = g.levels, i = lv.indexOf(g.get(t));
+    const ni = Math.max(0, Math.min(lv.length - 1, i + (e.deltaY < 0 ? 1 : -1)));
+    setGauge(g, t.id, lv[ni]); render();
+  }, { passive: false });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("select, input")) return;
+    if (e.key === "Escape" && S.menu) { e.preventDefault(); back(); return; }
+    if ((e.key === "t" || e.key === "T") && S.hover) { S.target = S.target === S.hover ? null : S.hover; render(); return; }
+    if (!S.menu) return;
+    const { t, node } = resolve();
+    if (/^[1-9]$/.test(e.key) && node.type === "group") { e.preventDefault(); choose(+e.key - 1); return; }
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && node.type === "gauge") {
+      e.preventDefault();
+      const lv = node.g.levels, i = lv.indexOf(node.g.get(t));
+      const ni = Math.max(0, Math.min(lv.length - 1, i + (e.key === "ArrowRight" ? 1 : -1)));
+      setGauge(node.g, t.id, lv[ni]); render();
+    }
+  });
+
+  // Panel controls
+  $("pf-sys").addEventListener("change", (e) => { S.system = e.target.value; S.off.clear(); renderPreview(); });
+  $("pf-pool").addEventListener("change", (e) => { S.pool = e.target.value; renderPreview(); });
+  $("ef-dn").addEventListener("click", () => { S.effort = Math.max(0, S.effort - 1); renderPreview(); });
+  $("ef-up").addEventListener("click", () => { S.effort = Math.min(6, S.effort + 1); renderPreview(); });
+  $("m-opt").addEventListener("click", () => { S.mode = "optical"; renderPreview(); });
+  $("m-sig").addEventListener("click", () => { S.mode = "signal"; renderPreview(); });
+
+  // Open on Vanguard so the first frame shows the ring
+  S.menu = { id: "vg", path: [] };
+  render();
+})();
+</script>
+</body>
+</html>
